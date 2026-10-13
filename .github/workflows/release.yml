@@ -79,7 +79,9 @@ jobs:
         run: npm ci
       - name: 覆盖安装 Electron 22（最后一个官方支持 Win7/8.1 的版本）
         run: npm install --no-save electron@22
-      - name: 构建并发布 Windows 7 专版（portable，ia32 + x64）
-        run: npx electron-builder --win --config build/win7.json --publish always
+      - name: 构建 Win7 专版（portable，ia32 + x64，不发布、不抢 latest.yml）
+        run: npx electron-builder --win --config build/win7.json
+      - name: 上传 Win7 专版到 Release（与主线 latest.yml 隔离，不参与自动更新）
+        run: gh release upload ${{ github.ref_name }} "dist/lolo桌宠-win7-x64.exe" "dist/lolo桌宠-win7-ia32.exe"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
