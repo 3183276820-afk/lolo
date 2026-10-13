@@ -20,3 +20,12 @@ assets/videos/**/*.mp4
 assets/videos/**/*.webm
 assets/videos/hevc_backup/
 assets/videos/old_grab_drop_blackbg.png
+
+# 回收站/临时目录（工具产生，非源码）
+.recycle/
+
+# 原始视频/图片素材（运行时不用，体积大，不入仓库）
+*.mp4
+*.webm
+/*.jpg
+/*.jpeg
