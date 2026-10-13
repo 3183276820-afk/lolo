@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <style>
+    html, body {
+      margin: 0; padding: 0; background: transparent; overflow: hidden;
+      width: 100%; height: 100%;
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", Roboto, Arial, sans-serif;
+      /* 透明窗口上 ClearType 次像素渲染会出现笔画残缺，强制灰度抗锯齿 */
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: geometricPrecision;
+      user-select: none; cursor: default;
+    }
+    /* wrap 铺满固定尺寸窗口：默认内容贴底（气泡在 lolo 头顶），below 时贴顶。
+       -webkit-app-region: drag 让整窗（除气泡本体）鼠标穿透，不挡点击 */
+    #wrap {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: flex-end;
+      padding: 0 12px 6px;
+      -webkit-app-region: drag;
+    }
+    #wrap.below { justify-content: flex-start; padding: 6px 12px 0; }
+    /* 说话气泡：白底圆角。
+       关键：透明窗口上 box-shadow / 半透明背景会触发合成异常，
+       所以用不透明纯色背景 + 实线边框，不用阴影。 */
+    .bubble {
+      box-sizing: border-box;
+      max-width: 340px;
+      padding: 8px 14px;
+      background: #ffffff;
+      color: #333;
+      border: 1px solid #e6e6e6;
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1.45;
+      text-align: center;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    /* 提醒气泡：琥珀色，可点击关闭 */
+    .reminder {
+      box-sizing: border-box;
+      max-width: 360px;
+      padding: 10px 16px;
+      background: #fff7e8;
+      color: #6b4a10;
+      border: 1px solid #e8c98a;
+      border-radius: 14px;
+      line-height: 1.45;
+      text-align: center;
+      cursor: pointer;
+    }
+    .reminder .title { font-weight: 700; margin-bottom: 2px; }
+    .reminder .hint { font-size: 11px; opacity: 0.65; margin-top: 3px; }
+    /* panel 即气泡本体；position:relative 供尾巴绝对定位锚定。
+       no-drag 让气泡本体可点击（关闭提醒），而整窗其余区域因 #wrap 的 drag 而穿透 */
+    #panel {
+      position: relative;
+      display: flex; flex-direction: column; align-items: center;
+      -webkit-app-region: no-drag;
+    }
+    /* 小尾巴：旋转 45° 的小方块，绝对定位在气泡边缘、一半露在外面。
+       之前它占文档流挤在文字区，白方块压住文字 —— 这就是“字体缺一块”的真正根因。 */
+    .tail {
+      position: absolute;
+      left: 50%; bottom: -6px;
+      width: 12px; height: 12px;
+      margin-left: -6px;
+      transform: rotate(45deg);
+      background: #ffffff;
+      border-right: 1px solid #e6e6e6;
+      border-bottom: 1px solid #e6e6e6;
+      border-radius: 2px;
+    }
+    .reminder .tail {
+      background: #fff7e8;
+      border-right-color: #e8c98a;
+      border-bottom-color: #e8c98a;
+    }
+    /* 脚下模式：尾巴翻到气泡顶部、朝上指 */
+    #wrap.below .tail {
+      bottom: auto; top: -6px;
+      border-right: none; border-bottom: none;
+      border-left: 1px solid #e6e6e6;
+      border-top: 1px solid #e6e6e6;
+    }
+    #wrap.below .reminder .tail {
+      border-left-color: #e8c98a;
+      border-top-color: #e8c98a;
+    }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <div id="panel">
+      <div id="content"></div>
+      <div class="tail"></div>
+    </div>
+  </div>
+  <script src="bubble.js"></script>
+</body>
+</html>

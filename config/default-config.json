@@ -1,0 +1,252 @@
+{
+  "version": 1,
+  "autoStart": false,
+  "size": {
+    "scale": 1,
+    "width": 240,
+    "height": 240
+  },
+  "idle": {
+    "autoMode": "sleep",
+    "idleTimeoutMs": 8000,
+    "deepSleepSec": 60,
+    "deepSleepState": "lying_back",
+    "deepSleepIntro": "roll_over",
+    "idleWalkMin": 30
+  },
+  "states": {
+    "sleep": {
+      "video": "sleep.png",
+      "duration": 2.27,
+      "label": "睡觉",
+      "messages": [
+        "Zzz……",
+        "呼——呼——",
+        "让 lolo 睡个好觉~"
+      ]
+    },
+    "walk": {
+      "video": "walk.png",
+      "duration": 4.07,
+      "label": "到处走走",
+      "messages": [
+        "溜达溜达~",
+        "前面有什么好玩的？",
+        "散步有助于消化哦"
+      ]
+    },
+    "walk_left": {
+      "video": "walk_left.png",
+      "duration": 4.07,
+      "label": "到处走走(左)",
+      "messages": [
+        "换个方向走走~",
+        "往这边逛逛"
+      ]
+    },
+    "turn": {
+      "video": "turn.png",
+      "duration": 3.07,
+      "label": "转身",
+      "messages": [
+        "转个圈圈~",
+        "看我灵活转身！"
+      ]
+    },
+    "upside_down": {
+      "video": "upside_down.png",
+      "duration": 1.4,
+      "label": "倒立",
+      "messages": [
+        "看我的倒立！",
+        "世界颠倒啦~"
+      ]
+    },
+    "grab": {
+      "video": "grab.png",
+      "duration": 0.53,
+      "label": "被拎起",
+      "messages": [
+        "哇——放我下来！",
+        "救命呀，我要飞起来了~"
+      ]
+    },
+    "grab_held": {
+      "video": "grab_held.png",
+      "duration": 0.53,
+      "label": "被拎起(定格)"
+    },
+    "drop": {
+      "video": "drop.png",
+      "duration": 2.13,
+      "label": "被放下",
+      "messages": [
+        "哎哟，摔了个屁股蹲",
+        "还是地上踏实~"
+      ]
+    },
+    "cheer": {
+      "video": "cheer.png",
+      "duration": 1,
+      "label": "加油",
+      "messages": [
+        "加油加油！",
+        "你最棒啦！",
+        "冲鸭——"
+      ]
+    },
+    "roll_over": {
+      "video": "roll_over.png",
+      "duration": 1.07,
+      "label": "翻身(深睡过渡)",
+      "messages": [
+        "换个姿势睡更舒服~"
+      ]
+    },
+    "lying_back": {
+      "video": "lying_back.png",
+      "duration": 1,
+      "label": "仰躺(深睡定格)",
+      "messages": [
+        "四脚朝天，真放松…",
+        "Zzz……"
+      ]
+    },
+    "feed": {
+      "video": "feed.png",
+      "duration": 4,
+      "label": "喂食",
+      "messages": [
+        "好吃~",
+        "谢谢投喂！",
+        "好饱呀~",
+        "嗯~真香"
+      ]
+    },
+    "focus_start": {
+      "video": "focus_start.png",
+      "duration": 4.07,
+      "label": "番茄钟启动",
+      "messages": [
+        "计时开始！我会陪着你的~",
+        "看，小计时器已经在走啦",
+        "专注模式，启动！"
+      ]
+    },
+    "drink": {
+      "video": "drink.png",
+      "duration": 4.07,
+      "label": "喝水",
+      "messages": [
+        "咕咚咕咚~补充水分！",
+        "喝水时间到啦",
+        "多喝水，皮肤好~"
+      ]
+    },
+    "daze": {
+      "video": "daze.png",
+      "duration": 4.07,
+      "label": "打瞌睡",
+      "messages": [
+        "困了……眼皮在打架",
+        "Zzz……（专注也要偷个懒）",
+        "再撑一下下就好~"
+      ]
+    },
+    "read": {
+      "video": "read.png",
+      "duration": 4.07,
+      "label": "看书",
+      "messages": [
+        "安静看会儿书~",
+        "知识就是力量！",
+        "翻一页，再翻一页"
+      ]
+    }
+  },
+  "foods": [
+    {
+      "id": "cake",
+      "name": "蛋糕",
+      "icon": "food_cake.png"
+    },
+    {
+      "id": "burger",
+      "name": "汉堡",
+      "icon": "food_burger.png"
+    },
+    {
+      "id": "nuggets",
+      "name": "鸡块",
+      "icon": "food_nuggets.png"
+    },
+    {
+      "id": "drumstick",
+      "name": "鸡腿",
+      "icon": "food_drumstick.png"
+    },
+    {
+      "id": "egg",
+      "name": "煎蛋",
+      "icon": "food_egg.png"
+    },
+    {
+      "id": "cola",
+      "name": "可乐",
+      "icon": "food_cola.png"
+    },
+    {
+      "id": "milktea",
+      "name": "奶茶",
+      "icon": "food_milktea.png"
+    },
+    {
+      "id": "milk",
+      "name": "牛奶",
+      "icon": "food_milk.png"
+    },
+    {
+      "id": "sushi",
+      "name": "寿司",
+      "icon": "food_sushi.png"
+    },
+    {
+      "id": "fries",
+      "name": "薯条",
+      "icon": "food_fries.png"
+    }
+  ],
+  "clickResponses": [
+    "嗨~今天我也很喜欢你",
+    "lolo 收到！",
+    "再点一下试试"
+  ],
+  "idleMessages": [
+    "你已经很久没理我了",
+    "我在这里陪你",
+    "记得喝水哦~"
+  ],
+  "focus": {
+    "durationMin": 25,
+    "autoRun": false,
+    "strictMode": false
+  },
+  "water": {
+    "enabled": false,
+    "intervalMin": 40
+  },
+  "sound": {
+    "ringtone": true,
+    "tone": "glass",
+    "vibrate": false
+  },
+  "reminderBehavior": {
+    "doAction": true,
+    "action": "drink",
+    "showBubble": true,
+    "pinDurationSec": 5,
+    "bubbleFontSize": 14,
+    "bubbleDurationSec": 6
+  },
+  "schedules": []
+}

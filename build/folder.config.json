@@ -1,0 +1,37 @@
+{
+  "appId": "com.lolo.desktoppet",
+  "productName": "lolo桌宠",
+  "executableName": "lolo",
+  "directories": {
+    "output": "dist"
+  },
+  "compression": "maximum",
+  "asar": false,
+  "files": [
+    "main.js",
+    "preload.js",
+    "!_src_plain/**",
+    "config/**/*",
+    "src/**/*",
+    "assets/**/*",
+    "!assets/videos/**/*.mp4",
+    "!assets/videos/**/*.webm",
+    "!assets/videos/hevc_backup/**",
+    "!assets/videos/old_grab_drop_blackbg.png"
+  ],
+  "win": {
+    "target": [
+      "dir"
+    ],
+    "icon": "assets/icon/lolo.ico",
+    "signAndEditExecutable": false
+  },
+  "portable": {
+    "artifactName": "lolo桌宠.exe"
+  },
+  "nsis": {
+    "artifactName": "lolo桌宠-setup-${version}.exe",
+    "createDesktopShortcut": true,
+    "shortcutName": "lolo桌宠"
+  }
+}

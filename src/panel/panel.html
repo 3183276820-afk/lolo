@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="panel.css" />
+</head>
+<body>
+  <header>
+    <h1>lolo 桌宠控制面板</h1>
+    <p class="sub">管理桌宠窗口的素材、互动回应、专注与日程提醒。修改保存后会实时同步。</p>
+  </header>
+
+  <nav id="tabs">
+    <button class="tab" data-tab="assets">素材管理</button>
+    <button class="tab" data-tab="interaction">互动设置</button>
+    <button class="tab active" data-tab="focus">专注 &amp; 日程提醒</button>
+  </nav>
+
+  <main>
+    <!-- ============ 素材管理 ============ -->
+    <section id="pane-assets" class="pane hidden">
+      <div class="card">
+        <div class="card-title">素材列表</div>
+        <p class="hint-text">点击「上传/更换」为对应状态绑定视频素材，保存后实时生效</p>
+        <div id="asset-list"></div>
+      </div>
+    </section>
+
+    <!-- ============ 互动设置 ============ -->
+    <section id="pane-interaction" class="pane hidden">
+      <div class="card">
+        <div class="card-title">互动文案</div>
+        <label>随机回应（点击 lolo 时触发，每行一条）</label>
+        <textarea id="click-responses" rows="4"></textarea>
+        <label>闲置消息（长时间无交互时触发，每行一条）</label>
+        <textarea id="idle-messages" rows="4"></textarea>
+      </div>
+      <div class="card">
+        <div class="card-title">动作台词（不同动作对应相应的语句）</div>
+        <p class="hint-text">lolo 做某个动作时会优先说这里配置的专属台词，每行一条；留空则使用上面的通用语句</p>
+        <div id="phrase-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">开机自启</div>
+        <div class="row toggle-row">
+          <label>开机自动运行 lolo</label>
+          <label class="toggle"><input id="auto-start" type="checkbox" /><i></i></label>
+        </div>
+        <p class="hint-text">开启后，Windows 登录时会自动启动桌宠（在「启动」文件夹放入快捷方式）</p>
+      </div>
+      <div class="card">
+        <div class="card-title-row">
+          <div class="card-title">喂食食物</div>
+          <button id="add-food" class="small">＋ 新增食物</button>
+        </div>
+        <p class="hint-text">右键 lolo → 喂食，会弹出这里配置的食物列表。每种食物需要一个透明 PNG 图标（放在 assets/videos/ 或用下方「上传图标」）。</p>
+        <div id="food-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">桌宠尺寸</div>
+        <div class="row">
+          <label>缩放</label>
+          <input id="scale" type="range" min="0.4" max="4" step="0.02" />
+          <span id="scale-val" class="accent-val">1.00</span>
+        </div>
+        <div class="row"><label>宽度(px)</label><input id="width" type="number" /></div>
+        <div class="row"><label>高度(px)</label><input id="height" type="number" /></div>
+        <div class="row"><label>闲置超时(ms)</label><input id="timeout" type="number" /></div>
+        <div class="row">
+          <label>闲置默认模式</label>
+          <select id="auto-mode">
+            <option value="sleep">睡觉</option>
+            <option value="walk">到处走走</option>
+          </select>
+        </div>
+        <div class="row"><label>深度睡眠(秒)</label><input id="deep-sleep-sec" type="number" /></div>
+        <div class="row">
+          <label>深度睡眠动作</label>
+          <select id="deep-sleep-state">
+            <option value="lying_back">仰躺并定格</option>
+            <option value="sleep">趴着睡(不翻身)</option>
+          </select>
+        </div>
+        <div class="row"><label>自动散步(分钟，0=关闭)</label><input id="idle-walk-min" type="number" min="0" max="1440" /></div>
+        <button id="restore" class="ghost">恢复默认</button>
+      </div>
+    </section>
+
+    <!-- ============ 专注 & 日程提醒 ============ -->
+    <section id="pane-focus" class="pane">
+      <div class="card">
+        <div class="card-title">专注计时</div>
+        <div class="row">
+          <label>专注工作时长</label>
+          <input id="focus-duration" type="range" min="5" max="90" step="5" />
+          <span id="focus-duration-val" class="accent-val">25 分钟</span>
+        </div>
+        <div class="row toggle-row">
+          <label>一轮结束自动开启下一段计时</label>
+          <label class="toggle"><input id="focus-autorun" type="checkbox" /><i></i></label>
+        </div>
+        <div class="row toggle-row">
+          <label>启用严格模式：暂停计时直接终止本轮专注</label>
+          <label class="toggle"><input id="focus-strict" type="checkbox" /><i></i></label>
+        </div>
+        <div class="row focus-ctrl">
+          <span id="focus-status" class="focus-status">未开始</span>
+          <span class="focus-btns">
+            <button id="focus-start" class="small">开始专注</button>
+            <button id="focus-toggle" class="small ghost2">暂停 / 继续</button>
+            <button id="focus-stop" class="small ghost2">结束</button>
+          </span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">周期性自定义提醒</div>
+        <div class="row toggle-row">
+          <label>定时喝水提醒</label>
+          <label class="toggle"><input id="water-enabled" type="checkbox" /><i></i></label>
+        </div>
+        <div class="row">
+          <label>提醒间隔</label>
+          <input id="water-interval" type="number" min="1" max="240" />
+          <span class="unit">分钟一次</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">提醒音效</div>
+        <div class="row toggle-row">
+          <label>播放提醒铃声</label>
+          <label class="toggle"><input id="sound-enabled" type="checkbox" /><i></i></label>
+        </div>
+        <div class="row">
+          <label>铃声</label>
+          <select id="sound-tone">
+            <option value="glass">Glass</option>
+            <option value="chime">清脆</option>
+            <option value="soft">柔和</option>
+          </select>
+        </div>
+        <div class="row toggle-row">
+          <label>震动反馈（lolo 抖动）</label>
+          <label class="toggle"><input id="sound-vibrate" type="checkbox" /><i></i></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">lolo 提醒表现</div>
+        <div class="row check-row">
+          <label class="toggle"><input id="rb-action" type="checkbox" /><i></i></label>
+          <label>触发时切换专属提醒动作</label>
+          <select id="rb-action-name">
+            <option value="drink">喝水</option>
+            <option value="cheer">加油</option>
+            <option value="upside_down">倒立</option>
+            <option value="walk">到处走走</option>
+          </select>
+        </div>
+        <div class="row check-row">
+          <label class="toggle"><input id="rb-bubble" type="checkbox" /><i></i></label>
+          <label>弹出文字气泡框展示提醒内容</label>
+        </div>
+        <div class="row">
+          <label>置顶显示持续</label>
+          <input id="rb-pin" type="number" min="3" max="120" />
+          <span class="unit">秒后恢复常态</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">气泡样式</div>
+        <div class="row">
+          <label>气泡文字字体大小</label>
+          <input id="bubble-font" type="range" min="10" max="24" step="1" />
+          <span id="bubble-font-val" class="accent-val">14 px</span>
+        </div>
+        <div class="row">
+          <label>气泡自动消失时长</label>
+          <input id="bubble-duration" type="number" min="3" max="60" />
+          <span class="unit">秒</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title-row">
+          <div class="card-title">日程事项提前提醒</div>
+          <button id="add-schedule" class="small">＋ 新增日程</button>
+        </div>
+        <p class="hint-text">支持一次性 / 每周工作日 / 每天重复；到点前可提前提醒（如提前 30 分钟）</p>
+        <div id="schedule-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <button id="save">保存</button>
+    <span id="hint"></span>
+  </footer>
+
+  <script src="panel.js"></script>
+</body>
+</html>

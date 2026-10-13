@@ -1,0 +1,206 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+#stage {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  cursor: grab;
+}
+
+#stage:active {
+  cursor: grabbing;
+}
+
+#pet-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.bubble, .toast {
+  pointer-events: none;
+}
+
+/* 普通气泡：跟随 lolo 头顶显示，避免被其他窗口内容遮挡 */
+.bubble {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 92%;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #333;
+  border-radius: 14px;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+/* 提醒气泡：头顶显示、可点击关闭 */
+.reminder-bubble {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 96%;
+  padding: 8px 14px;
+  background: #fff7e8;
+  color: #6b4a10;
+  border: 1px solid #e8c98a;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  cursor: pointer;
+  z-index: 6;
+}
+.reminder-bubble #reminder-title {
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+/* 震动反馈 */
+@keyframes pet-shake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-5px, 0); }
+  40% { transform: translate(5px, 0); }
+  60% { transform: translate(-4px, 0); }
+  80% { transform: translate(4px, 0); }
+}
+#stage.shake {
+  animation: pet-shake 0.8s ease-in-out;
+}
+
+.toast {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 14px;
+  background: rgba(34, 197, 94, 0.92);
+  color: #fff;
+  border-radius: 12px;
+  font-size: 13px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* !important 关键：若后续再加带 display 的 ID 规则，优先级会压过本类，
+   不加 !important 会导致弹层"永远显示"= 全窗口半透明灰罩（历史灰框事故的根因）*/
+.hidden {
+  display: none !important;
+}
+
+/* 右键菜单已改为系统原生菜单（Menu.popup），不再有小窗内 HTML 菜单 */
+
+/* 喂食：食物道具飞向嘴边的动画 */
+#food-prop {
+  position: absolute;
+  width: 34%;
+  height: auto;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0;
+}
+#food-prop.play {
+  animation: feed-fly 1.6s ease-out forwards;
+}
+@keyframes feed-fly {
+  0%   { left: 78%; top: 92%; width: 20%; transform: translate(-50%, -50%) rotate(-14deg); opacity: 0; }
+  18%  { opacity: 1; }
+  62%  { left: 50%; top: 40%; width: 34%; transform: translate(-50%, -50%) rotate(0deg); opacity: 1; }
+  100% { left: 50%; top: 40%; width: 30%; transform: translate(-50%, -50%) rotate(0deg); opacity: 0; }
+}
+
+/* 喂食：食物选择器 —— 环绕 lolo 的环形菜单 */
+#food-picker {
+  position: absolute;
+  inset: 0;
+  z-index: 11;
+  /* 容器不拦截鼠标：避免铺满整窗的透明罩层罩住 lolo、形成灰框、挡住点击与拖拽；
+     只有下面的 .food-btn 接收点击 */
+  pointer-events: none;
+  background: transparent;
+}
+#food-wheel {
+  position: absolute;
+  inset: 0;
+  transform-origin: center center;
+}
+.food-btn {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 56px;
+  pointer-events: auto; /* 仅食物按钮可点，容器不拦 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 3px;
+  border: none;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  color: #333;
+  transition: opacity .22s ease;
+}
+.food-btn:hover { background: #e0e7ff; }
+.food-btn img { width: 40px; height: 40px; object-fit: contain; pointer-events: none; }
+.food-name { font-size: 11px; line-height: 1; pointer-events: none; white-space: nowrap; }
+/* 未转出到上半圆的食物：隐藏且不可点 */
+.food-btn.hidden-food { opacity: 0; pointer-events: none; }
+/* 轮盘模式：食物较多时缩小、可旋转 */
+#food-picker.wheel .food-btn { width: 44px; }
+#food-picker.wheel .food-btn img { width: 30px; height: 30px; }
+#food-picker.wheel .food-name { font-size: 10px; }
+#food-wheel-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: #555;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 2px 6px;
+  border-radius: 6px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ---------- 番茄钟：时长选择弹层已废弃（改用原生菜单子菜单，不再遮挡 lolo） ---------- */
+
+/* ---------- 番茄钟：专注中常驻计时条 ---------- */
+#focus-timer {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  padding: 3px 10px;
+  background: rgba(232, 163, 61, 0.92);
+  color: #1a1a1a;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 7;
+}

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <style>
+    html, body {
+      margin: 0; padding: 6px;
+      background: transparent;
+      font-family: -apple-system, "Microsoft YaHei", "PingFang SC", sans-serif;
+      user-select: none;
+      overflow: hidden;
+    }
+    /* 不透明底板：透明窗口里必须有实色面板，文字才看得清 */
+    #list {
+      padding: 4px 0;
+      box-sizing: border-box;
+      background: #23252b;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 10px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+    }
+    .item {
+      height: 30px; line-height: 30px;
+      padding: 0 16px;
+      color: #f2f2f2; font-size: 13px;
+      white-space: nowrap; cursor: default;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .item:hover { background: rgba(255, 255, 255, 0.16); }
+    .item.disabled { color: #8a8a8a; }
+    .item .arrow { opacity: 0.6; margin-left: 12px; font-size: 14px; }
+    .item.back { color: #9fd0ff; }
+    .sep { height: 1px; background: rgba(255, 255, 255, 0.14); margin: 4px 8px; }
+  </style>
+</head>
+<body>
+  <div id="list"></div>
+  <script>
+    const list = document.getElementById('list');
+    const api = window.loloAPI;
+    let rootItems = [];
+    let stack = [];
+    let current = [];
+
+    function render(items) {
+      current = items;
+      list.innerHTML = '';
+      if (stack.length) {
+        const b = document.createElement('div');
+        b.className = 'item back';
+        b.textContent = '‹ 返回';
+        b.onclick = () => { stack.pop(); render(stack.length ? stack[stack.length - 1] : rootItems); };
+        list.appendChild(b);
+      }
+      items.forEach((it) => {
+        if (it.sep) {
+          const s = document.createElement('div');
+          s.className = 'sep';
+          list.appendChild(s);
+          return;
+        }
+        const d = document.createElement('div');
+        d.className = 'item' + (it.disabled ? ' disabled' : '');
+        const span = document.createElement('span');
+        span.textContent = it.label;
+        d.appendChild(span);
+        if (it.submenu) {
+          const a = document.createElement('span');
+          a.className = 'arrow';
+          a.textContent = '›';
+          d.appendChild(a);
+        }
+        d.onclick = () => {
+          if (it.disabled) return;
+          if (it.submenu) { stack.push(current); render(it.submenu); }
+          else { api.send('pet:menu-pick', { action: it.action, arg: it.arg }); }
+        };
+        list.appendChild(d);
+      });
+      requestAnimationFrame(() => {
+        const h = Math.min(document.body.scrollHeight || 40, 560);
+        api.send('menu:size', { h: h });
+      });
+    }
+
+    api.onMenuItems((its) => { rootItems = its; stack = []; render(rootItems); });
+    api.onMenuClose(() => { window.close(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') window.close(); });
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
+  </script>
+</body>
+</html>

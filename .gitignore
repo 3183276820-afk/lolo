@@ -1,0 +1,22 @@
+# 依赖
+node_modules/
+
+# 构建产物（本地打包输出，不必入库）
+dist/
+out/
+
+# 日志
+*.log
+
+# 保护构建可能残留的中间备份
+_src_plain/
+_obf_backup/
+
+# 项目内部数据（非源码）
+.workbuddy/
+
+# 源视频素材：运行时只用 APNG(png)，mp4/webm 是原始素材，不必入库
+assets/videos/**/*.mp4
+assets/videos/**/*.webm
+assets/videos/hevc_backup/
+assets/videos/old_grab_drop_blackbg.png
