@@ -33,21 +33,33 @@ jobs:
           echo "RELEASE_TOKEN 已配置（长度 ${#GH_TOKEN}），继续。"
       - name: 生成发布说明
         run: |
+          VER="${GITHUB_REF_NAME#v}"   # tag v1.0.4 -> 1.0.4
           cat > release-notes.md <<'EOF'
           ## 下载对应你系统的版本 / Pick your platform
 
           | 平台 Platform | 文件 File | 说明 Notes |
           | --- | --- | --- |
-          | Windows 10 / 11 | `lolo-desktop-pet-setup-1.0.2.exe` | 安装版，**支持自动更新** Installer with auto-update |
-          | Windows 10 / 11 | `lolo-desktop-pet-1.0.2.exe` | 便携版，免安装、不自动更新 Portable, no auto-update |
+          | Windows 10 / 11 | `lolo-desktop-pet-setup-__VER__.exe` | 安装版，**支持自动更新** Installer with auto-update |
+          | Windows 10 / 11 | `lolo-desktop-pet-__VER__.exe` | 便携版，免安装、不自动更新 Portable, no auto-update |
           | Windows 7 | `lolo-win7-x64.exe` / `lolo-win7-ia32.exe` | 老系统专版（32 位选 ia32）Legacy build |
-          | macOS | `lolo桌宠.dmg` | 未签名：右键 → 打开 Unsigned: right-click → Open |
+          | macOS（Intel 芯片） | `lolo-desktop-pet-__VER__-x64.dmg` | 未签名 Unsigned |
+          | macOS（Apple 芯片 M 系列） | `lolo-desktop-pet-__VER__-arm64.dmg` | 未签名 Unsigned |
+
+          **不确定 Mac 是哪种芯片？** 左上角苹果菜单  →「关于本机 About This Mac」：
+          看到 **Intel** 下 `-x64.dmg`，看到 **Apple M1/M2/M3/M4** 下 `-arm64.dmg`。
+
+          **Mac 首次打开**（未签名应用）：不要双击，在 dmg 上**右键 → 打开**；
+          若提示“已损坏 / damaged”，在终端执行 `xattr -cr /Applications/lolo桌宠.app` 后重开。
+          On macOS: right-click the dmg → **Open**. If it says "damaged", run
+          `xattr -cr /Applications/lolo桌宠.app` in Terminal.
 
           **首次使用请看** 👉 `lolo-使用说明-User-Guide.md`（中英双语完整手册，软件内「面板 → 使用说明」也有同样内容）。
 
           **See the User Guide** 👉 `lolo-使用说明-User-Guide.md` — bilingual manual (Chinese + English). The same guide is built into the app under Panel → User Guide.
           EOF
-          echo "发布说明已生成"
+          sed -i "s/__VER__/${VER}/g" release-notes.md
+          echo "发布说明已生成（版本 ${VER}）"
+          cat release-notes.md
       - name: 创建 GitHub Release（正式发布，非草稿，发布到公开仓库 lolo-pet）
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
@@ -118,6 +130,10 @@ jobs:
         run: npx electron-builder --mac --x64 --arm64 --publish always
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      # 守门：确认两个架构的 dmg 文件名没有被 electron-builder 洗成同名。
+      # 若有人把 mac.artifactName 改回含中文的名字，这里会红叉报警（详见脚本内注释）。
+      - name: 校验 x64 / arm64 的 dmg 文件名互不冲突
+        run: node build/verify-dmg-names.js
 
   build-win7:
     needs: create-release
