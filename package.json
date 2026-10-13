@@ -1,6 +1,6 @@
 {
   "name": "lolo-desktop-pet",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "lolo 桌面萌宠 (Windows)",
   "main": "main.js",
   "scripts": {

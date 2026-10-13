@@ -446,6 +446,23 @@ function createPetWindow() {
     slog('[pet] setMin/MaxSize 不可用（非 Windows 平台？）:', e.message);
   }
 
+  // 尺寸看门狗：resize 事件里发现实际尺寸偏离期望值就立即回弹。
+  // petExpectedSize 初始为创建时配置尺寸，首次 SET_SIZE 后由 setPetSize 接管。
+  petExpectedSize = [config.size.width, config.size.height];
+  petWindow.on('resize', () => {
+    if (petGuardBusy || !petExpectedSize || !petWindow || petWindow.isDestroyed()) return;
+    try {
+      const [cw, ch] = petWindow.getSize();
+      if (cw !== petExpectedSize[0] || ch !== petExpectedSize[1]) {
+        slog('[pet] 看门狗回弹:', cw + 'x' + ch, '->', petExpectedSize.join('x'));
+        petGuardBusy = true;
+        const b = petWindow.getBounds();
+        petWindow.setBounds({ x: b.x, y: b.y, width: petExpectedSize[0], height: petExpectedSize[1] });
+        setTimeout(() => { petGuardBusy = false; }, 150);
+      }
+    } catch (e) {}
+  });
+
   // 显式展示 + 首启居中，避免透明窗口被定位到屏幕外而“看不见”
   petWindow.once('ready-to-show', () => {
     petWindow.center();
@@ -590,7 +607,7 @@ function createTray() {
     { label: '打开控制面板', click: () => showPanel() },
     { label: '退出 lolo', click: () => app.exit(0) }
   ]);
-  tray.setToolTip('lolo 桌宠');
+  tray.setToolTip('lolo 桌宠 v' + app.getVersion()); // 版本可见化：托盘悬停即可核对测试用户跑的是哪个版本
   tray.setContextMenu(contextMenu);
   tray.on('click', () => showPanel());
 }
@@ -601,8 +618,15 @@ ipcMain.on(CH.DEBUG_LOG, (e, msg) => slog('[renderer]', msg));
 // 关键修复：resizable:false 窗口在 Windows 上，程序化 setSize 只能放大、缩不回去
 // （构造参数 min/max 和运行时 setMinimumSize 都拦不住系统锁）。可靠做法：临时放开
 // resizable 再 setSize，缩小即生效；随后恢复 resizable:false（用户仍不能拖边框改大小）。
+// 尺寸看门狗：记录当前应锁定的宠物窗口尺寸。任何外力（系统 DPI 重算、拖拽边界、
+// 显卡驱动、某些 Windows 版本重置 MINMAXINFO 等）把窗口改大/改小，都立即弹回。
+// 这是"拖拽/走路/长按变大"的最后一道保险丝：即使 min==max 锁被系统绕过也兜得住。
+let petExpectedSize = null;
+let petGuardBusy = false;
+
 function setPetSize(w, h) {
   if (!petWindow) return;
+  petExpectedSize = [w, h]; // 看门狗以此为基准，偏离即回弹
   try { petWindow.setResizable(true); } catch (e) {}
   // 先放开 min/max 约束，否则上一次的 min==max 锁会把 setSize 顶回去
   try { petWindow.setMinimumSize(40, 40); } catch (e) {}
@@ -1109,10 +1133,12 @@ function scheduleUpdateCheck() {
 ipcMain.handle(CH.GET_BOUNDS, () => (petWindow ? petWindow.getBounds() : null));
 ipcMain.on(CH.SET_BOUNDS, (e, b) => {
   if (petWindow && b && !petWindow.isDestroyed()) {
-    // 显式带上当前宽高：Win10 上若只给 x/y，可缩放窗口在 DPI 缩放下会“尺寸爬升”
-    // （表现为拖拽/走路时 lolo 越变越大）。min==max 锁已禁止改尺寸，这里再兜底一次。
-    const [cw, ch] = petWindow.getSize();
-    petWindow.setBounds({ x: b.x, y: b.y, width: cw, height: ch });
+    // 关键：宽高用看门狗的期望尺寸（petExpectedSize），而不是 getSize()。
+    // getSize() 在 DPI 缩放（125%/150%）下可能已被系统四舍五入漂移，用它写回会形成
+    // "每次移动读一次漂移值再写回去"的棘轮，越挪越大（Win10/Win11 都中招的根因）。
+    // 用固定期望值则每次移动都重新断言规范尺寸，彻底杜绝爬升。
+    const [ew, eh] = petExpectedSize || petWindow.getSize();
+    petWindow.setBounds({ x: b.x, y: b.y, width: ew, height: eh });
   }
   // lolo 移动（散步/拖拽）时，悬浮气泡跟随，避免和本体脱节
   if (bubbleWindow && bubbleWindow.isVisible()) positionBubbleWindow(true);
