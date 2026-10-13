@@ -18,6 +18,10 @@ function refreshLang() {
 }
 function t(key) { return I18N.t(currentLang, key); }
 
+// 可选界面语言（值即 config.language 的取值）；菜单与面板共用同一套选项与文案
+const LANG_OPTIONS = ['auto', 'zh-CN', 'en-US'];
+const LANG_OPTIONS_I18N = { 'auto': 'option.langAuto', 'zh-CN': 'option.langZh', 'en-US': 'option.langEn' };
+
 
 // 允许桌宠窗口在无用户手势时播放提醒音效
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
@@ -194,6 +198,16 @@ function saveConfig(cfg) {
   // 语言偏好随配置落盘，保存后立即切换整套界面文案
   applyLanguage();
   persistConfig();
+}
+
+// 统一的语言切换入口：面板下拉、右键菜单共用，改完立即生效并落盘
+function setLanguagePref(lang) {
+  if (!config) return;
+  config.language = LANG_OPTIONS.indexOf(lang) >= 0 ? lang : 'auto';
+  applyLanguage();
+  persistConfig();
+  // 桌宠端的内置内容（状态台词、点击回应、闲置语）也要跟着切到新语言
+  if (petWindow) petWindow.webContents.send(CH.CONFIG_UPDATED, configForPet(config));
 }
 
 // ---------- 开机自启 ----------
@@ -719,13 +733,7 @@ ipcMain.on(CH.SAVE_CONFIG, (e, newConfig) => {
 // 此前 onchange 只重绘面板自己，主进程 config.language 仍是旧值，
 // 导致托盘菜单 / 右键菜单 / 气泡全部留在旧语言，与「切换后立即生效」的说明不符。
 ipcMain.on(CH.SET_LANG, (e, lang) => {
-  if (!config) return;
-  const allowed = ['auto', 'zh-CN', 'en-US'];
-  config.language = allowed.indexOf(lang) >= 0 ? lang : 'auto';
-  applyLanguage();
-  persistConfig();
-  // 桌宠端的内置内容（状态台词、点击回应、闲置语）也要跟着切到新语言
-  if (petWindow) petWindow.webContents.send(CH.CONFIG_UPDATED, configForPet(config));
+  setLanguagePref(lang);
 });
 
 ipcMain.on(CH.RESET_DEFAULT, () => {
@@ -842,7 +850,8 @@ function petAction(action) {
 let menuWindow = null;
 let menuPos = { x: 0, y: 0 };
 let menuReady = false;
-const MENU_W = 188;
+// 加宽一点：语言子菜单里英文项较长（"Follow system (default)"），188 会挤到被裁切
+const MENU_W = 204;
 
 function ensureMenuWindow() {
   if (menuWindow) return menuWindow;
@@ -937,6 +946,18 @@ function buildPetMenuItems() {
   }
   items.push({ sep: true });
   items.push({ label: t('menu.openPanel'), action: 'panel' });
+  // 语言切换：与面板「互动设置 → 语言」同源，选中后立即生效，当前项标「（默认）」
+  const curPref = (config && config.language) || 'auto';
+  items.push({
+    label: t('menu.language'),
+    submenu: LANG_OPTIONS.map((code) => ({
+      label: t(LANG_OPTIONS_I18N[code]) + (curPref === code ? t('suffix.default') : ''),
+      action: 'set-lang',
+      arg: code
+    }))
+  });
+  items.push({ sep: true });
+  items.push({ label: t('menu.quit'), action: 'quit' });
   return items;
 }
 
@@ -968,6 +989,12 @@ function performMenuAction(action, arg) {
       break;
     case 'panel':
       togglePanel();
+      break;
+    case 'set-lang':
+      setLanguagePref(arg);
+      break;
+    case 'quit':
+      app.exit(0);
       break;
   }
 }
