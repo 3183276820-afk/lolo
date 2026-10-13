@@ -10,6 +10,8 @@ jobs:
   build-macos:
     runs-on: macos-latest
     timeout-minutes: 120
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: false   # CI 无 Apple 证书，走不签名流程，避免找不到身份时报错退出
 
     steps:
       - name: 检出代码

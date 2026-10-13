@@ -71,7 +71,8 @@
     },
     "dmg": {
       "title": "lolo ${version}",
-      "icon": "assets/icon/mac/icon.icns"
+      "icon": "assets/icon/mac/icon.icns",
+      "background": "build/background.png"
     }
   },
   "dependencies": {
