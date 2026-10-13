@@ -93,7 +93,12 @@ jobs:
 
   build-mac:
     needs: create-release
-    runs-on: macos-latest
+    # 故意不用 macos-latest：它与 macOS 15 一样指向 Apple Silicon(arm64) runner，
+    # 该池常年容量不足， job 会卡在 "not acquired by Runner ... capacity constraints"。
+    # macos-13 是 Intel x64 runner，队列充裕；dmg 打包不依赖真机架构，
+    # 在 x64 runner 上照样能交叉产出 arm64 版 dmg。
+    # 注：macos-13 将于 2026-12 退役，届时改用 macos-15-intel（同为 x64 runner）。
+    runs-on: macos-13
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: false   # 未签名，避免找不到证书报错退出
     steps:
@@ -107,7 +112,7 @@ jobs:
       - name: 安装依赖
         run: npm ci
       - name: 构建并发布 macOS（dmg x64 + arm64，未签名）
-        run: npx electron-builder --mac --publish always
+        run: npx electron-builder --mac --x64 --arm64 --publish always
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
