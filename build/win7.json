@@ -1,12 +1,28 @@
 {
-  "extends": "./package.json",
+  "appId": "com.lolo.desktoppet",
+  "productName": "lolo桌宠",
+  "executableName": "lolo",
+  "directories": {
+    "output": "dist"
+  },
+  "compression": "maximum",
+  "asar": true,
+  "files": [
+    "main.js",
+    "preload.js",
+    "!_src_plain/**",
+    "config/**/*",
+    "src/**/*",
+    "assets/**/*",
+    "!assets/videos/**/*.mp4",
+    "!assets/videos/**/*.webm",
+    "!assets/videos/hevc_backup/**",
+    "!assets/videos/old_grab_drop_blackbg.png"
+  ],
+  "publish": null,
   "win": {
     "target": [
       "portable"
-    ],
-    "arch": [
-      "x64",
-      "ia32"
     ],
     "icon": "assets/icon/lolo.ico",
     "signAndEditExecutable": false
