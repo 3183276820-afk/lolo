@@ -16,15 +16,16 @@ jobs:
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
-      - name: 创建 GitHub Release（正式发布，非草稿）
+      - name: 创建 GitHub Release（正式发布，非草稿，发布到公开仓库 lolo-pet）
         uses: softprops/action-gh-release@v2
         with:
+          repository: 3183276820-afk/lolo-pet
           tag_name: ${{ github.ref_name }}
           draft: false
           prerelease: false
           generate_release_notes: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
   build-win:
     needs: create-release
@@ -42,7 +43,7 @@ jobs:
       - name: 构建并发布 Windows（portable + nsis 安装版）
         run: npx electron-builder --win --publish always
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
   build-mac:
     needs: create-release
@@ -62,7 +63,7 @@ jobs:
       - name: 构建并发布 macOS（dmg x64 + arm64，未签名）
         run: npx electron-builder --mac --publish always
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
   build-win7:
     needs: create-release
@@ -82,6 +83,6 @@ jobs:
       - name: 构建 Win7 专版（portable，ia32 + x64，不发布、不抢 latest.yml）
         run: npx electron-builder --win --config build/win7.json
       - name: 上传 Win7 专版到 Release（与主线 latest.yml 隔离，不参与自动更新）
-        run: gh release upload ${{ github.ref_name }} "dist/lolo桌宠-win7-x64.exe" "dist/lolo桌宠-win7-ia32.exe"
+        run: gh release upload ${{ github.ref_name }} "dist/lolo桌宠-win7-x64.exe" "dist/lolo桌宠-win7-ia32.exe" --repo 3183276820-afk/lolo-pet
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
