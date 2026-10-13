@@ -95,6 +95,6 @@ jobs:
       - name: 构建 Win7 专版（portable，ia32 + x64，不发布、不抢 latest.yml）
         run: npx electron-builder --win --ia32 --x64 --config build/win7.json
       - name: 上传 Win7 专版到 Release（与主线 latest.yml 隔离，不参与自动更新）
-        run: gh release upload ${{ github.ref_name }} "dist/lolo桌宠-win7-x64.exe" "dist/lolo桌宠-win7-ia32.exe" --repo 3183276820-afk/lolo-pet
+        run: gh release upload ${{ github.ref_name }} "dist/lolo桌宠-win7-x64.exe" "dist/lolo桌宠-win7-ia32.exe" --repo 3183276820-afk/lolo-pet --clobber
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}

@@ -42,7 +42,8 @@
       {
         "provider": "github",
         "owner": "3183276820-afk",
-        "repo": "lolo-pet"
+        "repo": "lolo-pet",
+        "releaseType": "release"
       }
     ],
     "win": {
