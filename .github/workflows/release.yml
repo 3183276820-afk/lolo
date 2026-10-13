@@ -93,12 +93,15 @@ jobs:
 
   build-mac:
     needs: create-release
-    # 故意不用 macos-latest：它与 macOS 15 一样指向 Apple Silicon(arm64) runner，
-    # 该池常年容量不足， job 会卡在 "not acquired by Runner ... capacity constraints"。
-    # macos-13 是 Intel x64 runner，队列充裕；dmg 打包不依赖真机架构，
-    # 在 x64 runner 上照样能交叉产出 arm64 版 dmg。
-    # 注：macos-13 将于 2026-12 退役，届时改用 macos-15-intel（同为 x64 runner）。
-    runs-on: macos-13
+    # runner 选型说明（踩过坑，勿随意改回 macos-latest）：
+    #  · macos-latest 指向 Apple Silicon(arm64) runner，该池容量不足，job 会卡在
+    #    "not acquired by Runner ... capacity constraints" 被取消，dmg 产不出。
+    #  · macos-13(Intel x64) 已于 2025-12-04 退役：用退役标签不会报错，
+    #    而是排队满 24 小时后才超时取消 —— 更难排查。
+    #  · macos-15-intel 是当前唯一可用的 x86_64 macOS runner（2027-08 退役）。
+    #  dmg 打包不依赖真机架构，x64 runner 可交叉产出 arm64 版 dmg。
+    runs-on: macos-15-intel
+    timeout-minutes: 45    # 退役/无可用 runner 时快速失败，不要排到 24h 才取消
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: false   # 未签名，避免找不到证书报错退出
     steps:

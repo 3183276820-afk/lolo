@@ -1,15 +1,26 @@
 name: Build macOS
 
+# 手动补救通道：当 release.yml 里的 build-mac job 因 runner 拿不到机器而失败时，
+# 在 Actions 页面手动触发本工作流，把 dmg 补传到 lolo-pet 的指定 Release。
+# 用法：Actions → Build macOS → Run workflow → 填 tag（例如 v1.0.3）
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: '要补传的目标 Release 标签，例如 v1.0.3'
+        required: true
+        default: 'v1.0.3'
 
 permissions:
   contents: read
 
 jobs:
   build-macos:
-    runs-on: macos-latest
-    timeout-minutes: 120
+    # 不用 macos-latest：它指向 arm64 runner，该池容量不足，常拿不到机器。
+    # macos-13 已于 2025-12-04 退役（用退役标签会排队 24h 才超时，不易察觉）。
+    # macos-15-intel 是当前唯一可用的 x86_64 macOS runner（2027-08 退役）。
+    runs-on: macos-15-intel
+    timeout-minutes: 45
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: false   # CI 无 Apple 证书，走不签名流程，避免找不到身份时报错退出
 
@@ -26,11 +37,28 @@ jobs:
       - name: 安装依赖
         run: npm ci
 
-      - name: 构建 macOS 版本
-        run: npx electron-builder --mac --publish never
+      - name: 构建 macOS 版本（dmg x64 + arm64）
+        run: npx electron-builder --mac --x64 --arm64 --publish never
 
       - name: 上传构建产物
         uses: actions/upload-artifact@v4
         with:
           name: macos-build
           path: dist/*.dmg
+
+      - name: 补传 dmg 到 lolo-pet 的 Release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          TAG="${{ github.event.inputs.tag }}"
+          if [ -z "$TAG" ]; then
+            echo "未指定 tag，跳过上传。"
+            exit 1
+          fi
+          shopt -s nullglob
+          files=(dist/*.dmg)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "未找到 dmg 产物，跳过上传。"
+            exit 1
+          fi
+          gh release upload "$TAG" "${files[@]}" --repo 3183276820-afk/lolo-pet --clobber
