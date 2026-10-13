@@ -16,16 +16,24 @@ jobs:
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
-      - name: 创建 GitHub Release（正式发布，非草稿，发布到公开仓库 lolo-pet）
-        uses: softprops/action-gh-release@v2
-        with:
-          repository: 3183276820-afk/lolo-pet
-          tag_name: ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-          generate_release_notes: true
+      - name: 校验 RELEASE_TOKEN 已配置
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::RELEASE_TOKEN secret 未配置或为空！请到 lolo 仓库 Settings → Secrets and variables → Actions 新建名为 RELEASE_TOKEN 的 secret，值为一个具有 repo 权限的 classic PAT。"
+            exit 1
+          fi
+          echo "RELEASE_TOKEN 已配置（长度 ${#GH_TOKEN}），继续。"
+      - name: 创建 GitHub Release（正式发布，非草稿，发布到公开仓库 lolo-pet）
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --repo 3183276820-afk/lolo-pet \
+            --title "${{ github.ref_name }}" \
+            --notes "lolo 桌宠自动构建发布" \
+            --latest
 
   build-win:
     needs: create-release
