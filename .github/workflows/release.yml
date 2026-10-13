@@ -8,6 +8,12 @@ on:
 permissions:
   contents: write
 
+# 同一 tag 重复推送/重跑时自动取消旧 run：
+# 避免多个 mac 构建并行互相抢占、白白消耗 Actions 配额（这也是 dmg 反复被取消的常见诱因）
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # 先建一个正式（非草稿）Release，供两个构建 job 上传产物，
   # 避免 win / mac 并发各自创建 Release 导致 409 冲突。
