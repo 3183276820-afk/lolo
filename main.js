@@ -1174,7 +1174,9 @@ const IS_PORTABLE = !!process.env.PORTABLE_EXECUTABLE_FILE;
 const UPDATER_ENABLED = app.isPackaged && !IS_PORTABLE;
 // macOS 自动更新强制要求签名+公证（否则 quitAndInstall 被 Gatekeeper 拦截），
 // 未签名的 Mac 版改为「提醒 + 引导前往 Releases 手动下载」。
-const RELEASES_URL = 'https://github.com/3183276820-afk/lolo/releases';
+// 注意：必须指向「分发仓库 lolo-pet」而不是源码仓库 lolo ——
+// 所有 Release 产物都发布在 lolo-pet（公开），lolo 是源码仓库（拟转私有，转了就会 404）
+const RELEASES_URL = 'https://github.com/3183276820-afk/lolo-pet/releases';
 
 let autoUpdater = null;
 let updateStage = 'idle'; // idle | available | downloading | downloaded
