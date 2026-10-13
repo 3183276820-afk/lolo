@@ -473,6 +473,7 @@ function createPetWindow() {
   } catch (e) {
     slog('[pet] setMin/MaxSize 不可用（非 Windows 平台？）:', e.message);
   }
+  applyMacSpacesBehavior(petWindow); // macOS：常驻所有桌面空间，切空间/全屏时不丢 lolo
 
   // 尺寸看门狗：resize 事件里发现实际尺寸偏离期望值就立即回弹。
   // petExpectedSize 初始为创建时配置尺寸，首次 SET_SIZE 后由 setPetSize 接管。
@@ -557,6 +558,16 @@ function ensurePanelWindow() {
 function sendPanel(channel, ...args) {
   if (!panelWindow || panelWindow.isDestroyed()) return;
   try { panelWindow.webContents.send(channel, ...args); } catch (e) {}
+}
+
+// macOS 专有：Spaces（多桌面空间）兼容。
+// Mac 的窗口默认只出现在「创建时所在的那个桌面空间」，用户切换空间或打开全屏应用后
+// lolo 就会“消失”——这是 Mac 用户最常见的困惑来源。桌宠应当在所有空间常驻。
+// visibleOnFullScreen:true 让 lolo 也能浮在全屏 App 之上（配合 alwaysOnTop 'screen-saver'）。
+// Windows/Linux 没有 Spaces 概念，此属性不适用，做了平台判定与异常兜底。
+function applyMacSpacesBehavior(win) {
+  if (process.platform !== 'darwin' || !win || win.isDestroyed()) return;
+  try { win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); } catch (e) {}
 }
 
 // 保持 lolo 悬浮在普通窗口之上。用 'screen-saver' 置顶层（高于默认 floating），
@@ -830,6 +841,7 @@ function ensureMenuWindow() {
     }
   });
   menuWindow.loadFile(path.join(__dirname, 'src/pet/menu.html'));
+  applyMacSpacesBehavior(menuWindow); // macOS：右键菜单跟随 lolo，跨空间可用
   attachWebDiagnostics(menuWindow, 'menu');
   // 失焦即关闭（点击 lolo / 桌面其它处都会让它 blur）
   menuWindow.on('blur', () => closeMenuWindow());
@@ -1012,6 +1024,7 @@ function ensureBubbleWindow() {
   // 仅气泡本体（bubble.html 里 #panel 设了 -webkit-app-region: no-drag）可点击关闭提醒。
   // 这同时消除了“气泡窗太大、上方一大片透明区会拦截鼠标”的违和感（之前让人觉得气泡飘得远）。
   try { bubbleWindow.setIgnoreMouseEvents(true, { forward: true }); } catch (e) { /* 旧版 Electron 忽略 */ }
+  applyMacSpacesBehavior(bubbleWindow); // macOS：气泡跟随 lolo，同样要跨空间可见
   attachWebDiagnostics(bubbleWindow, 'bubble');
   // 渲染端就绪后再收内容：loadFile 是异步的，提前 send 会被丢弃（首次气泡内容丢失）
   bubbleWindow.webContents.on('did-finish-load', () => {
