@@ -5,6 +5,19 @@ const { pathToFileURL, fileURLToPath } = require('url');
 
 const CH = require('./src/shared/ipcChannels');
 const DEFAULT_CONFIG = require('./config/default-config.json');
+const I18N = require('./src/shared/i18n');
+
+// 界面语言：面板显式选择 > 跟随系统 > 中文兜底。
+// 注意：这里用独立的 langPref 变量而不是直接读 config —— config 是 let 声明的，
+// 在声明前用 typeof 探测会触发 TDZ 的 ReferenceError。
+let langPref = 'auto';
+let currentLang = I18N.resolveLang('auto', app.getLocale());
+function refreshLang() {
+  currentLang = I18N.resolveLang(langPref, app.getLocale());
+  return currentLang;
+}
+function t(key) { return I18N.t(currentLang, key); }
+
 
 // 允许桌宠窗口在无用户手势时播放提醒音效
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
@@ -14,12 +27,12 @@ function showError(title, err) {
   const msg = (err && (err.stack || err.message)) || String(err);
   try { dialog.showErrorBox(title, msg); } catch (e) { console.error(title, msg); }
 }
-process.on('uncaughtException', (e) => showError('lolo 启动出错', e));
-process.on('unhandledRejection', (e) => showError('lolo 运行出错', e));
+process.on('uncaughtException', (e) => showError(t('err.startupTitle'), e));
+process.on('unhandledRejection', (e) => showError(t('err.runtimeTitle'), e));
 app.on('render-process-gone', (ev, win, det) => {
   const r = (det && det.reason) || 'unknown';
   slog('render-process-gone:', r);
-  if (r !== 'clean-exit') showError('桌宠窗口崩溃', r);
+  if (r !== 'clean-exit') showError(t('err.windowCrash'), r);
 });
 
 const userData = app.getPath('userData');
@@ -157,8 +170,18 @@ function loadConfig() {
   return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
 }
 
+// 语言生效全流程：读偏好 → 解析语言 → 翻译内置内容（保护用户自定义）→ 重建托盘 → 广播给界面
+function applyLanguage() {
+  langPref = (config && config.language) || 'auto';
+  refreshLang();
+  if (config) { try { I18N.relocalizeContent(config, currentLang); } catch (e) {} }
+  refreshTrayLabels();
+}
+
 function saveConfig(cfg) {
   config = cfg;
+  // 语言偏好随配置落盘，保存后立即切换整套界面文案
+  applyLanguage();
   fs.mkdirSync(path.dirname(CONFIG_PATH), { recursive: true });
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
 }
@@ -275,7 +298,7 @@ function focusPause() {
     // 严格模式：暂停计时直接终止本轮专注
     focus.phase = 'idle';
     focus.remainingSec = ((config.focus && config.focus.durationMin) || 25) * 60;
-    triggerReminder('focus', '专注终止', '严格模式下暂停会结束本轮专注，重新开始吧~');
+    triggerReminder('focus', t('notify.focusAborted.title'), t('notify.focusAborted.body'));
   } else {
     focus.phase = 'paused';
   }
@@ -340,7 +363,12 @@ function checkSchedules(now) {
     s.lastFiredDate = dayKey;
     if (s.repeat === 'once') { s.fired = true; }
     dirty = true;
-    triggerReminder('schedule', s.title || '日程提醒', `提醒：${s.title || '日程事项'}（${pad2(hh)}:${pad2(mm)}）`);
+    const shownTitle = s.title || t('notify.schedule.defaultTitle');
+    // 中英文的标点习惯不同：中文用全角括号，英文用半角，按当前语言拼接
+    const bodyText = currentLang === 'en-US'
+      ? `${t('notify.schedule.body')}${shownTitle} (${pad2(hh)}:${pad2(mm)})`
+      : `${t('notify.schedule.body')}${shownTitle}（${pad2(hh)}:${pad2(mm)}）`;
+    triggerReminder('schedule', s.title || t('notify.schedule.title'), bodyText);
   });
 
   if (dirty) saveConfig(config);
@@ -357,7 +385,7 @@ function startEngine() {
     if (focus.phase === 'running') {
       focus.remainingSec = Math.max(0, Math.round((focus.endAt - now) / 1000));
       if (focus.remainingSec <= 0) {
-        triggerReminder('focus', '专注完成！', '一轮专注结束，休息一下吧~');
+        triggerReminder('focus', t('notify.focusDone.title'), t('notify.focusDone.body'));
         if (config.focus && config.focus.autoRun) {
           // 一轮结束自动开启下一段计时
           focus.remainingSec = ((config.focus && config.focus.durationMin) || 25) * 60;
@@ -378,7 +406,7 @@ function startEngine() {
     if (water.enabled) {
       if (!waterNextAt) waterNextAt = now + (water.intervalMin || 40) * 60000;
       if (now >= waterNextAt) {
-        triggerReminder('water', '喝水提醒', '记得喝水哦~');
+        triggerReminder('water', t('notify.water.title'), t('notify.water.body'));
         waterNextAt = now + (water.intervalMin || 40) * 60000;
       }
     } else {
@@ -604,12 +632,24 @@ function createTray() {
     return;
   }
   const contextMenu = Menu.buildFromTemplate([
-    { label: '打开控制面板', click: () => showPanel() },
-    { label: '退出 lolo', click: () => app.exit(0) }
+    { label: t('tray.openPanel'), click: () => showPanel() },
+    { label: t('tray.quit'), click: () => app.exit(0) }
   ]);
-  tray.setToolTip('lolo 桌宠 v' + app.getVersion()); // 版本可见化：托盘悬停即可核对测试用户跑的是哪个版本
+  tray.setToolTip(t('tray.tooltip') + app.getVersion()); // 版本可见化：托盘悬停即可核对测试用户跑的是哪个版本
   tray.setContextMenu(contextMenu);
   tray.on('click', () => showPanel());
+}
+
+// 语言切换后重建托盘菜单与悬停提示（菜单是构建时快照，必须重建才会变语言）
+function refreshTrayLabels() {
+  if (!tray || typeof tray.isDestroyed === 'function' && tray.isDestroyed()) return;
+  try {
+    tray.setContextMenu(Menu.buildFromTemplate([
+      { label: t('tray.openPanel'), click: () => showPanel() },
+      { label: t('tray.quit'), click: () => app.exit(0) }
+    ]));
+    tray.setToolTip(t('tray.tooltip') + app.getVersion());
+  } catch (e) { /* 托盘不可用时静默跳过 */ }
 }
 
 // ---------- IPC ----------
@@ -707,13 +747,13 @@ ipcMain.handle(CH.UPLOAD_FOOD_ICON, async (e, payload) => {
 // 在 Electron 打包后不弹文件对话框（这是经典坑，导致“上传图标/上传素材”完全没反应）
 ipcMain.handle(CH.PICK_FILE, async (e, opts) => {
   const accept = (opts && opts.accept) || 'image/*';
-  let filters = [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'] }];
+  let filters = [{ name: t('dialog.images'), extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'] }];
   if (accept.indexOf('video') >= 0) {
-    filters = [{ name: '视频', extensions: ['mp4', 'webm', 'mov', 'avi', 'mkv'] }];
+    filters = [{ name: t('dialog.videos'), extensions: ['mp4', 'webm', 'mov', 'avi', 'mkv'] }];
   }
   try {
     const { canceled, filePaths } = await dialog.showOpenDialog({
-      title: '选择文件',
+      title: t('dialog.selectFile'),
       properties: ['openFile'],
       filters
     });
@@ -834,34 +874,34 @@ function buildPetMenuItems() {
   const mins = [5, 10, 15, 25, 30, 45, 60];
   const preset = (config.focus && config.focus.durationMin) || 25;
   const items = [
-    { label: '睡觉', action: 'sleep' },
-    { label: '到处走走', action: 'walk' },
-    { label: '恢复默认待机', action: 'idle-restore' },
-    { label: '倒立', action: 'upside_down' },
-    { label: '加油', action: 'cheer' },
-    { label: '转身', action: 'turn' },
-    { label: '喂食', action: 'feed' },
+    { label: t('menu.sleep'), action: 'sleep' },
+    { label: t('menu.walk'), action: 'walk' },
+    { label: t('menu.idleDefault'), action: 'idle-restore' },
+    { label: t('menu.upsideDown'), action: 'upside_down' },
+    { label: t('menu.cheer'), action: 'cheer' },
+    { label: t('menu.turn'), action: 'turn' },
+    { label: t('menu.feed'), action: 'feed' },
     { sep: true }
   ];
   if (focus.phase === 'running') {
-    items.push({ label: '暂停番茄钟', action: 'focus-pause' });
-    items.push({ label: '结束专注', action: 'focus-stop' });
+    items.push({ label: t('menu.pausePomodoro'), action: 'focus-pause' });
+    items.push({ label: t('menu.stopFocus'), action: 'focus-stop' });
   } else if (focus.phase === 'paused') {
-    items.push({ label: '继续番茄钟', action: 'focus-resume' });
-    items.push({ label: '结束专注', action: 'focus-stop' });
+    items.push({ label: t('menu.resumePomodoro'), action: 'focus-resume' });
+    items.push({ label: t('menu.stopFocus'), action: 'focus-stop' });
   } else {
     // 时长选择放进子菜单，取代旧的全窗口半透明「时长选择弹层」（那层灰罩会盖住 lolo）
     items.push({
-      label: '开始番茄钟',
+      label: t('menu.startPomodoro'),
       submenu: mins.map((m) => ({
-        label: m + ' 分钟' + (m === preset ? '（默认）' : ''),
+        label: m + t('unit.minutes') + (m === preset ? t('suffix.default') : ''),
         action: 'focus-start',
         arg: m
       }))
     });
   }
   items.push({ sep: true });
-  items.push({ label: '控制面板', action: 'panel' });
+  items.push({ label: t('menu.openPanel'), action: 'panel' });
   return items;
 }
 
@@ -1030,7 +1070,8 @@ function showBubbleNow(p) {
   const win = ensureBubbleWindow();
   bubblePayload = p || {};
   positionBubbleWindow(true); // 先定位（顺带算出 above/below）
-  const content = Object.assign({}, bubblePayload, { below: bubbleBelow });
+  // 带上当前语言，气泡渲染端的兜底文案（标题/提示）才能跟随界面语言
+  const content = Object.assign({}, bubblePayload, { below: bubbleBelow, lang: currentLang });
   // 渲染端未就绪则先缓存，did-finish-load 后再下发，避免内容被丢弃
   if (bubbleReady) {
     win.webContents.send(CH.BUBBLE_CONTENT, content);
@@ -1092,14 +1133,14 @@ if (UPDATER_ENABLED) {
       // macOS 未签名：无法走 quitAndInstall 自动安装（Gatekeeper 会拦截），改为提醒并引导手动下载
       updateStage = 'mac-guide';
       showBubbleNow({
-        kind: 'update', title: '发现新版本 v' + v,
-        text: '点击前往 GitHub 下载新版 dmg', hint: '点击打开下载页', fontSize: 13
+        kind: 'update', title: t('updater.foundTitle') + v,
+        text: t('updater.macGuideHint'), hint: t('updater.openDownload'), fontSize: 13
       });
     } else {
       updateStage = 'available';
       showBubbleNow({
-        kind: 'update', title: '发现新版本 v' + v,
-        text: 'lolo 有新版本啦，点击即可下载更新', hint: '点击下载更新', fontSize: 13
+        kind: 'update', title: t('updater.foundTitle') + v,
+        text: t('updater.newVersionText'), hint: t('updater.clickDownload'), fontSize: 13
       });
     }
   });
@@ -1113,8 +1154,8 @@ if (UPDATER_ENABLED) {
     const pct = Math.round((p && p.percent) || 0);
     if (pct % 20 === 0) slog('[updater] 下载进度 ' + pct + '%');
     showBubbleNow({
-      kind: 'update', title: '正在下载更新',
-      text: '已完成 ' + pct + '%', hint: '下载中，请稍候…', fontSize: 13
+      kind: 'update', title: t('updater.downloading'),
+      text: t('updater.progress') + pct + '%', hint: t('updater.downloadHint'), fontSize: 13
     });
   });
 
@@ -1123,8 +1164,8 @@ if (UPDATER_ENABLED) {
     const v = (info && info.version) || '';
     slog('[updater] 更新已下载 v' + v);
     showBubbleNow({
-      kind: 'update', title: '更新已就绪 v' + v,
-      text: '点击立即重启并安装新版本', hint: '点击安装并重启', fontSize: 13
+      kind: 'update', title: t('updater.readyTitle') + v,
+      text: t('updater.readyText'), hint: t('updater.clickInstall'), fontSize: 13
     });
   });
 
@@ -1147,7 +1188,7 @@ function handleUpdateBubbleClick() {
     if (updateStage === 'available') {
       updateStage = 'downloading';
       slog('[updater] 用户确认，开始下载');
-      showBubbleNow({ kind: 'update', title: '正在下载更新', text: '准备中…', hint: '下载中，请稍候…', fontSize: 13 });
+      showBubbleNow({ kind: 'update', title: t('updater.downloading'), text: t('updater.preparing'), hint: t('updater.downloadHint'), fontSize: 13 });
       autoUpdater.downloadUpdate();
     } else if (updateStage === 'downloaded') {
       slog('[updater] 用户确认，重启安装');
@@ -1227,6 +1268,8 @@ app.whenReady().then(async () => {
   if (!(await instanceReady)) return; // 极罕见兜底：未取得实例锁则不启动
   slog('app ready');
   config = loadConfig();
+  // 启动即按「面板偏好 > 系统语言」确定界面语言，并同步内置内容
+  applyLanguage();
   slog('config loaded');
   applyAutoStart(!!config.autoStart); // 与「开机自启」配置保持一致（幂等）
   createPetWindow();
@@ -1240,7 +1283,7 @@ app.whenReady().then(async () => {
 
   // 首次启动：自动弹出控制面板，确保用户一定能看到窗口
   if (!config.version) {
-    slog('首次启动，自动显示控制面板');
+    slog(t('msg.firstRun'));
     showPanel();
     config.version = 1;
     saveConfig(config);

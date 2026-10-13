@@ -11,8 +11,14 @@
   const content = document.getElementById('content');
 
   let lastPayload = null;
+  const I18N = window.LoloI18n || null;
+  let lang = 'zh-CN';
+  /** 取文案，优先用主进程随气泡下发的语言 */
+  function tr(key) { return I18N ? I18N.t(lang, key) : key; }
   function render(p) {
     lastPayload = p || {};
+    lang = (lastPayload.lang && I18N && I18N.UI[lastPayload.lang]) ? lastPayload.lang
+      : (I18N ? I18N.resolveLang('auto', navigator.language || 'zh-CN') : 'zh-CN');
     wrap.classList.toggle('below', !!lastPayload.below);
     const kind = lastPayload.kind || 'say';
     // 'update'（自动更新气泡）复用提醒样式，但提示语由调用方自定义
@@ -22,12 +28,12 @@
     if (asReminder) {
       const title = document.createElement('div');
       title.className = 'title';
-      title.textContent = lastPayload.title || '提醒';
+      title.textContent = lastPayload.title || tr('pet.bubbleTitle');
       const text = document.createElement('div');
       text.textContent = lastPayload.text || '';
       const hint = document.createElement('div');
       hint.className = 'hint';
-      hint.textContent = lastPayload.hint || '点击关闭';
+      hint.textContent = lastPayload.hint || tr('pet.bubbleHint');
       content.innerHTML = '';
       content.appendChild(title);
       content.appendChild(text);

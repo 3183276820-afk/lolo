@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "language": "auto",
   "autoStart": false,
   "size": {
     "scale": 1,

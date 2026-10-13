@@ -35,7 +35,11 @@
 </head>
 <body>
   <div id="list"></div>
+  <script src="../shared/i18n.js"></script>
   <script>
+    const I18N_M = window.LoloI18n || null;
+    const LANG_M = I18N_M ? I18N_M.resolveLang('auto', navigator.language || 'zh-CN') : 'zh-CN';
+    function trM(k) { return I18N_M ? I18N_M.t(LANG_M, k) : k; }
     const list = document.getElementById('list');
     const api = window.loloAPI;
     let rootItems = [];
@@ -48,7 +52,7 @@
       if (stack.length) {
         const b = document.createElement('div');
         b.className = 'item back';
-        b.textContent = '‹ 返回';
+        b.textContent = trM('menu.back');
         b.onclick = () => { stack.pop(); render(stack.length ? stack[stack.length - 1] : rootItems); };
         list.appendChild(b);
       }

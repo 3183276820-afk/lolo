@@ -7,6 +7,31 @@ if (!api) {
 const BASE = 240;
 let working = null;
 
+// ---------- 多语言 ----------
+// LoloI18n 由 panel.html 中的 <script src="../shared/i18n.js"> 注入到 window
+const I18N = window.LoloI18n || null;
+let curLang = 'zh-CN';
+
+function tr(key) {
+  return I18N ? I18N.t(curLang, key) : key;
+}
+
+// 「用户偏好 + 系统语言」→ 最终语言。working.language 由面板写回配置并落盘
+function resolveLangFromConfig() {
+  const pref = (working && working.language) || 'auto';
+  const sys = (navigator && navigator.language) || 'zh-CN';
+  return I18N ? I18N.resolveLang(pref, sys) : 'zh-CN';
+}
+
+// 把页面上所有 data-i18n 标记的文本换成当前语言
+function applyStaticI18n() {
+  try {
+    document.querySelectorAll('[data-i18n]').forEach((el) => {
+      el.textContent = tr(el.getAttribute('data-i18n'));
+    });
+  } catch (e) { console.error('[lolo] 静态文案翻译失败', e); }
+}
+
 // ---------- 元素 ----------
 const $ = (id) => document.getElementById(id);
 const assetListEl = $('asset-list');
@@ -48,21 +73,21 @@ const bubbleDuration = $('bubble-duration');
 const scheduleList = $('schedule-list');
 
 const STATES = [
-  { key: 'sleep', label: '睡觉' },
-  { key: 'walk', label: '到处走走(右)' },
-  { key: 'walk_left', label: '到处走走(左)' },
-  { key: 'turn', label: '转身(右键触发)' },
-  { key: 'upside_down', label: '倒立' },
-  { key: 'grab', label: '被拎起(拖拽时)' },
-  { key: 'drop', label: '被放下(松手时)' },
-  { key: 'cheer', label: '加油' },
-  { key: 'roll_over', label: '翻身(深睡过渡)' },
-  { key: 'lying_back', label: '仰躺(深睡定格)' },
-  { key: 'feed', label: '喂食' },
-  { key: 'focus_start', label: '番茄钟启动' },
-  { key: 'drink', label: '喝水' },
-  { key: 'daze', label: '打瞌睡(专注待机)' },
-  { key: 'read', label: '看书(专注待机)' }
+  { key: 'sleep', label: tr('option.sleep') },
+  { key: 'walk', label: tr('asset.walkRight') },
+  { key: 'walk_left', label: tr('asset.walkLeft') },
+  { key: 'turn', label: tr('asset.turnClick') },
+  { key: 'upside_down', label: tr('option.upsideDown') },
+  { key: 'grab', label: tr('asset.grabTip') },
+  { key: 'drop', label: tr('asset.dropTip') },
+  { key: 'cheer', label: tr('option.cheer') },
+  { key: 'roll_over', label: tr('asset.rollOver') },
+  { key: 'lying_back', label: tr('asset.lyingBack') },
+  { key: 'feed', label: tr('menu.feed') },
+  { key: 'focus_start', label: tr('asset.focusStart') },
+  { key: 'drink', label: tr('option.drink') },
+  { key: 'daze', label: tr('asset.dazeTip') },
+  { key: 'read', label: tr('asset.readTip') }
 ];
 
 function splitLines(s) {
@@ -93,11 +118,11 @@ function buildAssetList() {
     const file = document.createElement('div');
     file.className = 'asset-file';
     const v = working.states[st.key] && working.states[st.key].video;
-    file.textContent = v ? v : '（未设置）';
+    file.textContent = v ? v : tr('asset.notSet');
 
     const btn = document.createElement('button');
     btn.className = 'small ghost2';
-    btn.textContent = '上传/更换';
+    btn.textContent = tr('btn.uploadReplace');
     btn.onclick = () => uploadFor(st.key);
 
     row.appendChild(name);
@@ -111,7 +136,7 @@ function uploadFor(state) {
   api.invoke(CH.PICK_FILE, { accept: 'video/*' }).then((res) => {
     if (!res) return;
     api.send(CH.UPLOAD_ASSET, { state, name: res.name, data: res.data });
-    hint.textContent = '素材已上传，桌宠实时同步';
+    hint.textContent = tr('asset.uploadedHint');
   }).catch((e) => { console.error('[lolo] 选择视频失败', e); });
 }
 
@@ -131,7 +156,7 @@ function buildPhraseList() {
     ta.className = 'phrase-ta';
     ta.rows = 2;
     ta.dataset.state = st.key;
-    ta.placeholder = '每行一条，留空使用通用语句';
+    ta.placeholder = tr('phrase.placeholder');
     const msgs = (working.states[st.key] && working.states[st.key].messages) || [];
     ta.value = msgs.join('\n');
 
@@ -182,19 +207,19 @@ function buildFoodList() {
       api.invoke(CH.ASSET_URL, f.icon).then((u) => { if (u) img.src = u; });
       iconWrap.appendChild(img);
     } else {
-      iconWrap.textContent = '无';
+      iconWrap.textContent = tr('food.noIcon');
     }
 
     const name = document.createElement('input');
     name.type = 'text';
     name.className = 'food-name';
-    name.placeholder = '食物名称';
+    name.placeholder = tr('food.namePlaceholder');
     name.value = f.name || '';
     name.oninput = () => { working.foods[idx].name = name.value; };
 
     const up = document.createElement('button');
     up.className = 'small ghost2';
-    up.textContent = '上传图标';
+    up.textContent = tr('btn.uploadIcon');
     up.onclick = () => uploadFoodIcon(f.id, idx, (fn) => {
       working.foods[idx].icon = fn;
       buildFoodList();
@@ -202,7 +227,7 @@ function buildFoodList() {
 
     const del = document.createElement('button');
     del.className = 'danger food-del';
-    del.textContent = '删除';
+    del.textContent = tr('btn.remove');
     del.onclick = () => { working.foods.splice(idx, 1); buildFoodList(); };
 
     item.appendChild(iconWrap);
@@ -214,13 +239,13 @@ function buildFoodList() {
   if (!foods.length) {
     const empty = document.createElement('p');
     empty.className = 'hint-text';
-    empty.textContent = '暂无食物，点击右上角「＋ 新增食物」添加一种';
+    empty.textContent = tr('food.empty');
     foodListEl.appendChild(empty);
   }
 }
 
 // ---------- 日程事项 ----------
-const REPEAT_LABEL = { once: '仅一次', weekdays: '每周工作日', daily: '每天' };
+const REPEAT_LABEL = { once: tr('schedule.repeat.once'), weekdays: tr('schedule.repeat.weekday'), daily: tr('schedule.repeat.daily') };
 
 function renderSchedules() {
   scheduleList.innerHTML = '';
@@ -245,13 +270,13 @@ function renderSchedules() {
 
     const title = document.createElement('input');
     title.className = 'title';
-    title.placeholder = '事项标题，如：项目会议';
+    title.placeholder = tr('schedule.titlePlaceholder');
     title.value = s.title || '';
     title.oninput = () => { working.schedules[idx].title = title.value; };
 
     const del = document.createElement('button');
     del.className = 'danger sch-del';
-    del.textContent = '删除';
+    del.textContent = tr('btn.remove');
     del.onclick = () => { working.schedules.splice(idx, 1); renderSchedules(); };
 
     main.appendChild(tg);
@@ -262,16 +287,16 @@ function renderSchedules() {
     const sub = document.createElement('div');
     sub.className = 'sch-sub';
 
-    sub.appendChild(document.createTextNode('执行时间'));
+    sub.appendChild(document.createTextNode(tr('schedule.execTime')));
     const time = document.createElement('input');
     time.type = 'time';
     time.value = s.time || '09:00';
     time.onchange = () => { working.schedules[idx].time = time.value; };
     sub.appendChild(time);
 
-    sub.appendChild(document.createTextNode('重复'));
+    sub.appendChild(document.createTextNode(tr('schedule.repeatLabel')));
     const rep = document.createElement('select');
-    [['once', '仅一次'], ['weekdays', '每周工作日'], ['daily', '每天']].forEach(([v, t]) => {
+    [['once', tr('schedule.repeat.once')], ['weekdays', tr('schedule.repeat.weekday')], ['daily', tr('schedule.repeat.daily')]].forEach(([v, t]) => {
       const o = document.createElement('option');
       o.value = v; o.textContent = t;
       rep.appendChild(o);
@@ -280,9 +305,12 @@ function renderSchedules() {
     rep.onchange = () => { working.schedules[idx].repeat = rep.value; };
     sub.appendChild(rep);
 
-    sub.appendChild(document.createTextNode('提前'));
+    sub.appendChild(document.createTextNode(tr('schedule.leadLabel')));
     const lead = document.createElement('select');
-    [['0', '准时'], ['5', '5 分钟'], ['15', '15 分钟'], ['30', '30 分钟'], ['60', '60 分钟'], ['custom', '自定义']].forEach(([v, t]) => {
+    // 数量与单位按语言拼接（英文是 "5 min"，中文是 "5 分钟"）
+    [['0', tr('schedule.onTime')], ['5', '5'], ['15', '15'], ['30', '30'], ['60', '60'], ['custom', tr('schedule.custom')]]
+      .forEach(([v, t]) => {
+        const label = (v === '0' || v === 'custom') ? t : t + ' ' + tr('unit.minutesShort');
       const o = document.createElement('option');
       o.value = v; o.textContent = t;
       lead.appendChild(o);
@@ -299,7 +327,7 @@ function renderSchedules() {
       leadCustom.value = s.leadMin || 30;
       leadCustom.onchange = () => { working.schedules[idx].leadMin = parseInt(leadCustom.value, 10) || 30; };
       sub.appendChild(leadCustom);
-      sub.appendChild(document.createTextNode('分钟'));
+      sub.appendChild(document.createTextNode(tr('unit.minutesShort')));
     }
     lead.onchange = () => {
       working.schedules[idx].leadMin = (lead.value === 'custom') ? 30 : parseInt(lead.value, 10);
@@ -314,7 +342,7 @@ function renderSchedules() {
   if (!(working.schedules || []).length) {
     const empty = document.createElement('p');
     empty.className = 'hint-text';
-    empty.textContent = '暂无日程，点击右上角「＋ 新增日程」添加一条提醒事项';
+    empty.textContent = tr('schedule.empty');
     scheduleList.appendChild(empty);
   }
 }
@@ -335,13 +363,13 @@ $('add-schedule').onclick = () => {
 addFoodBtn.onclick = () => {
   if (!working.foods) working.foods = [];
   const id = 'food_' + Date.now().toString(36);
-  working.foods.push({ id, name: '新食物', icon: '' });
+  working.foods.push({ id, name: tr('food.newName'), icon: '' });
   buildFoodList();
 };
 
 // ---------- 焦点控件联动 ----------
 focusDur.addEventListener('input', () => {
-  focusDurVal.textContent = focusDur.value + ' 分钟';
+  focusDurVal.textContent = focusDur.value + ' ' + tr('unit.minutesShort');
 });
 bubbleFont.addEventListener('input', () => {
   bubbleFontVal.textContent = bubbleFont.value + ' px';
@@ -376,7 +404,7 @@ hInput.addEventListener('input', () => applySizeFromWidth(hInput.value));
 // 睡觉/到处走走固定排最前，其余按 states 顺序追加
 function rebuildIdleModeOptions(cfg) {
   autoModeSel.innerHTML = '';
-  const opts = [['sleep', '睡觉'], ['walk', '到处走走']];
+  const opts = [['sleep', tr('option.sleep')], ['walk', tr('option.walk')]];
   Object.keys(cfg.states || {}).forEach((k) => {
     if (opts.some(([v]) => v === k)) return;
     const st = cfg.states[k];
@@ -404,14 +432,46 @@ function fmtRemain(sec) {
 
 api.onFocusState((st) => {
   if (!focusStatus) return;
-  if (st.phase === 'running') focusStatus.textContent = '专注中 · 剩余 ' + fmtRemain(st.remainingSec);
-  else if (st.phase === 'paused') focusStatus.textContent = '已暂停 · 剩余 ' + fmtRemain(st.remainingSec);
-  else focusStatus.textContent = '未开始（时长 ' + st.durationMin + ' 分钟）';
+  if (st.phase === 'running') focusStatus.textContent = tr('focus.statusRunningText') + fmtRemain(st.remainingSec);
+  else if (st.phase === 'paused') focusStatus.textContent = tr('focus.statusPausedText') + fmtRemain(st.remainingSec);
+  else focusStatus.textContent = tr('focus.statusIdleText') + st.durationMin + ' ' + tr('unit.minutesShort');
 });
+
+// ---------- 使用说明（应用内置，随语言切换） ----------
+const HELP_SECTIONS = ['start', 'move', 'menu', 'feed', 'pomodoro', 'reminder', 'settings', 'lang', 'update', 'trouble'];
+function buildHelp() {
+  const box = $('help-body');
+  if (!box) return;
+  box.innerHTML = '';
+  HELP_SECTIONS.forEach(function (id) {
+    const sec = document.createElement('div');
+    sec.className = 'card';
+    const h = document.createElement('div');
+    h.className = 'card-title';
+    h.textContent = tr('help.' + id + '.t');
+    sec.appendChild(h);
+    const body = document.createElement('div');
+    body.className = 'hint-text';
+    String(tr('help.' + id + '.d')).split('\n').forEach(function (line) {
+      const p = document.createElement('p');
+      p.style.margin = '0 0 6px';
+      p.textContent = line;
+      body.appendChild(p);
+    });
+    sec.appendChild(body);
+    box.appendChild(sec);
+  });
+}
 
 // ---------- 配置进 / 出 ----------
 function applyConfig(cfg) {
   working = cfg;
+  // 语言必须在重建任何列表之前确定：所有动态文案都依赖 curLang 取值
+  curLang = resolveLangFromConfig();
+  applyStaticI18n();
+  buildHelp();
+  const langSelEl = $('language');
+  if (langSelEl) langSelEl.value = cfg.language || 'auto';
   clickTA.value = (cfg.clickResponses || []).join('\n');
   idleTA.value = (cfg.idleMessages || []).join('\n');
   // 以 scale 为唯一真值，宽高由它推导（始终正方形），避免两套控件数值漂移导致“改了没反应”
@@ -438,7 +498,7 @@ function applyConfig(cfg) {
 
   const f = cfg.focus || {};
   focusDur.value = f.durationMin || 25;
-  focusDurVal.textContent = (f.durationMin || 25) + ' 分钟';
+  focusDurVal.textContent = (f.durationMin || 25) + ' ' + tr('unit.minutesShort');
   focusAutorun.checked = !!f.autoRun;
   focusStrict.checked = !!f.strictMode;
 
@@ -466,10 +526,32 @@ function applyConfig(cfg) {
   renderSchedules();
 }
 
+// 语言下拉：立刻切换整界面（不必等保存），随下一次「保存」落盘
+const langSel = $('language');
+if (langSel) {
+  langSel.onchange = () => {
+    if (!working) return;
+    working.language = langSel.value;
+    curLang = resolveLangFromConfig();
+    applyStaticI18n();
+    // 动态列表（素材名/食物名/台词/日程）需要重建才会用上新语言
+    try {
+      buildAssetList();
+      buildPhraseList();
+      buildFoodList();
+      renderSchedules();
+      rebuildIdleModeOptions(working);
+      buildHelp();
+    } catch (e) { console.error('[lolo] 切换语言后重建列表失败', e); }
+  };
+}
+
 $('save').onclick = () => {
   collectPhrases();
   const cfg = {
     version: 1,
+    // 语言跟随配置持久化，主进程收到后会立刻切换整套界面文案与内置内容
+    language: $('language') ? ($('language').value || 'auto') : 'auto',
     autoStart: autoStartEl.checked,
     size: {
       scale: parseFloat(scaleInput.value) || 1,
@@ -512,12 +594,12 @@ $('save').onclick = () => {
     schedules: working.schedules || []
   };
   api.send(CH.SAVE_CONFIG, cfg);
-  hint.textContent = '已保存，桌宠已同步';
+  hint.textContent = tr('msg.saved');
 };
 
 $('restore').onclick = () => {
   api.send(CH.RESET_DEFAULT);
-  hint.textContent = '已恢复默认';
+  hint.textContent = tr('msg.restored');
 };
 
 api.onPanelConfig(applyConfig);

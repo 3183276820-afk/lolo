@@ -1,8 +1,24 @@
 const api = window.loloAPI;
+const I18N = window.LoloI18n || null;
+let lang = 'zh-CN';
+let langPref = 'auto'; // 语言偏好（面板下发），避免直接用 TDZ 中的 config
+/** 取界面文案；i18n 缺失时原样返回中文 */
+function tr(key) { return I18N ? I18N.t(lang, key) : key; }
+/** 按当前语言取内置内容字典 */
+function contentOf() { return (I18N && I18N.CONTENT[lang]) || null; }
+/** 语言跟随配置偏好，未下发配置前按系统语言判定 */
+function applyLang(pref) {
+  if (pref) langPref = pref;
+  lang = I18N ? I18N.resolveLang(langPref, navigator.language || 'zh-CN') : 'zh-CN';
+  return lang;
+}
+applyLang();
 if (!api) {
-  console.error('[lolo] window.loloAPI 未定义：preload 未注入，桌宠无法运行');
+  const ERR_DEF = I18N ? I18N.t(I18N.resolveLang('auto', navigator.language || 'zh-CN'), 'pet.preloadMissing') : '[lolo] window.loloAPI 未定义：preload 未注入，桌宠无法运行';
+  const MSG_DEF = I18N ? I18N.t(I18N.resolveLang('auto', navigator.language || 'zh-CN'), 'pet.loadFailed') : 'lolo 加载失败：preload 未注入';
+  console.error(ERR_DEF);
   const t = document.createElement('div');
-  t.textContent = 'lolo 加载失败：preload 未注入';
+  t.textContent = MSG_DEF;
   t.style.cssText = 'position:fixed;left:6px;top:6px;color:#f55;font:12px/1.4 sans-serif;background:rgba(0,0,0,.6);padding:4px 6px;border-radius:4px;z-index:9999;';
   document.body && document.body.appendChild(t);
   throw new Error('loloAPI not injected');
@@ -266,7 +282,7 @@ function feedFood(food) {
 
 function openFoodPicker() {
   if (!config || !config.foods || !config.foods.length) {
-    showToast('暂未配置食物，请在面板「互动设置 → 喂食食物」里添加');
+    showToast(tr('pet.noFood'));
     return;
   }
   const foods = config.foods;
@@ -323,7 +339,7 @@ function openFoodPicker() {
   if (isWheel) {
     const hint = document.createElement('div');
     hint.id = 'food-wheel-hint';
-    hint.textContent = '滚轮 / 拖动旋转 · 上方半圆每次显示 5 种';
+    hint.textContent = tr('pet.wheelHint');
     foodPickerEl.appendChild(hint);
   }
   wheelRot = 0;
@@ -361,7 +377,7 @@ function playFocusStart() {
 function encourageFocus() {
   const pool = (config && config.clickResponses && config.clickResponses.length)
     ? config.clickResponses
-    : ['加油！', '你可以的！', '专注的力量 💪', '稳住，马上就好~'];
+    : ((contentOf() && contentOf().cheerPool) || ['加油！']);
   beginAction('cheer');
   setState('cheer');
   showBubble(randomFrom(pool));
@@ -380,7 +396,7 @@ function updateFocusTimer() {
   const elapsed = Math.max(0, focusUI.durationSec - remain);
   const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
   const ss = String(Math.floor(elapsed % 60)).padStart(2, '0');
-  focusTimerEl.textContent = '已专注 ' + mm + ':' + ss;
+  focusTimerEl.textContent = tr('pet.focusElapsed') + mm + ':' + ss;
 }
 
 // 根据主进程下发的专注状态，驱动桌宠表现
@@ -572,7 +588,7 @@ function onReminder(payload) {
   const bubbleSec = (rb.bubbleDurationSec != null) ? rb.bubbleDurationSec : 6;
 
   const text = payload && payload.text ? payload.text : '';
-  const title = payload && payload.title ? payload.title : '提醒';
+  const title = payload && payload.title ? payload.title : tr('pet.reminderTitle');
 
   // 关键：提醒是「自动事件」，绝不能重置 lastInteraction——否则像「每分钟喝水提醒」
   // 会不断清零空闲计时，导致 deep_sleep 永远触发不了。深睡判定在表演期间已通过
@@ -813,6 +829,7 @@ function startIdleMsg() {
 let firstConfig = true;
 function applyConfig(cfg) {
   config = cfg;
+  applyLang((cfg && cfg.language) || 'auto'); // 语言先到位，后续提示/吐司才是正确语言
   // 闲置默认模式以配置为准（旧代码 if(!prevIdle) 永远不成立，
   // 导致面板里改「闲置默认模式」保存后从不生效）
   prevIdle = (cfg.idle && cfg.idle.autoMode) || prevIdle || 'sleep';
@@ -826,7 +843,7 @@ function applyConfig(cfg) {
   if (current === 'walk') startWalk();
   startIdleWatch();
   startIdleMsg();
-  showToast(firstConfig ? 'lolo 已启动 ✅' : '配置已同步');
+  showToast(firstConfig ? tr('pet.started') : tr('pet.configSynced'));
   firstConfig = false;
 }
 
