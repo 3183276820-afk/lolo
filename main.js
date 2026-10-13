@@ -178,12 +178,22 @@ function applyLanguage() {
   refreshTrayLabels();
 }
 
+// 只把内存中的 config 落盘，不替换 config 本身（供「单项即时生效」场景复用）
+function persistConfig() {
+  if (!config) return;
+  try {
+    fs.mkdirSync(path.dirname(CONFIG_PATH), { recursive: true });
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+  } catch (e) {
+    slog('[config] 落盘失败:', (e && e.message) || e);
+  }
+}
+
 function saveConfig(cfg) {
   config = cfg;
   // 语言偏好随配置落盘，保存后立即切换整套界面文案
   applyLanguage();
-  fs.mkdirSync(path.dirname(CONFIG_PATH), { recursive: true });
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+  persistConfig();
 }
 
 // ---------- 开机自启 ----------
@@ -705,6 +715,19 @@ ipcMain.on(CH.SAVE_CONFIG, (e, newConfig) => {
   broadcastFocusState();
 });
 
+// 面板切换语言下拉时即时生效（不必等「保存」）。
+// 此前 onchange 只重绘面板自己，主进程 config.language 仍是旧值，
+// 导致托盘菜单 / 右键菜单 / 气泡全部留在旧语言，与「切换后立即生效」的说明不符。
+ipcMain.on(CH.SET_LANG, (e, lang) => {
+  if (!config) return;
+  const allowed = ['auto', 'zh-CN', 'en-US'];
+  config.language = allowed.indexOf(lang) >= 0 ? lang : 'auto';
+  applyLanguage();
+  persistConfig();
+  // 桌宠端的内置内容（状态台词、点击回应、闲置语）也要跟着切到新语言
+  if (petWindow) petWindow.webContents.send(CH.CONFIG_UPDATED, configForPet(config));
+});
+
 ipcMain.on(CH.RESET_DEFAULT, () => {
   saveConfig(mergeConfig(DEFAULT_CONFIG, JSON.parse(JSON.stringify(DEFAULT_CONFIG))));
   applyAutoStart(!!config.autoStart);
@@ -956,7 +979,8 @@ ipcMain.handle(CH.PET_CONTEXT_MENU, (e, pos) => {
   const estH = Math.min(8 + items.length * 30, 560);
   menuWindow.setSize(MENU_W, estH, false);
   positionMenuWindow((pos && typeof pos.x === 'number') ? pos.x : 0, (pos && typeof pos.y === 'number') ? pos.y : 0, estH);
-  menuWindow.webContents.send(CH.MENU_ITEMS, items);
+  // 带上当前语言：菜单项已翻译好，菜单窗口还需要它渲染「‹ 返回」
+  menuWindow.webContents.send(CH.MENU_ITEMS, { items, lang: currentLang });
   menuWindow.show();
   menuWindow.moveTop();
   menuWindow.focus();

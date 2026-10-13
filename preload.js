@@ -62,6 +62,8 @@ contextBridge.exposeInMainWorld('loloAPI', {
   onUpdateProgress: (cb) => ipcRenderer.on(CH.UPDATE_PROGRESS, (e, p) => cb(p)),
   onUpdateDownloaded: (cb) => ipcRenderer.on(CH.UPDATE_DOWNLOADED, (e, info) => cb(info)),
   send: (ch, data) => ipcRenderer.send(ch, data),
+  // 面板切换语言下拉时即时上报，让托盘菜单/右键菜单/气泡立刻跟上（不必等保存）
+  setLang: (lang) => ipcRenderer.send(CH.SET_LANG, lang),
   invoke: (ch, data) => ipcRenderer.invoke(ch, data),
   readAsset: (url) => ipcRenderer.invoke('pet:read-asset', url)
 });

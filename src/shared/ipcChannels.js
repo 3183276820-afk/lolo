@@ -40,5 +40,6 @@ module.exports = {
   UPDATE_CMD: 'pet:update-cmd',              // 桌宠 → 主进程：{cmd:'download'|'install'|'dismiss'}
   UPDATE_CHECK: 'pet:update-check',          // 桌宠 → 主进程：手动检查更新（右键菜单）
   UPDATE_STATUS: 'main:update-status',       // 主进程 → 面板：更新状态文本
+  SET_LANG: 'app:set-lang',                 // 面板 → 主进程：切换界面语言，即时生效（不必等「保存」）
   DEBUG_LOG: 'app:debug-log'               // 渲染进程 → 主进程：诊断日志
 };

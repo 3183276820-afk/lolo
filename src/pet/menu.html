@@ -38,7 +38,8 @@
   <script src="../shared/i18n.js"></script>
   <script>
     const I18N_M = window.LoloI18n || null;
-    const LANG_M = I18N_M ? I18N_M.resolveLang('auto', navigator.language || 'zh-CN') : 'zh-CN';
+    // 初值先按系统语言兜底；真正使用的语言由主进程随菜单数据下发（见下方 onMenuItems）
+    let LANG_M = I18N_M ? I18N_M.resolveLang('auto', navigator.language || 'zh-CN') : 'zh-CN';
     function trM(k) { return I18N_M ? I18N_M.t(LANG_M, k) : k; }
     const list = document.getElementById('list');
     const api = window.loloAPI;
@@ -87,7 +88,17 @@
       });
     }
 
-    api.onMenuItems((its) => { rootItems = its; stack = []; render(rootItems); });
+    // 主进程下发 { items, lang }：菜单项文案已由主进程翻译好，
+    // 但「‹ 返回」是本窗口自己渲染的，必须跟随用户在面板里选的语言，不能写死 auto
+    api.onMenuItems((payload) => {
+      const its = Array.isArray(payload) ? payload : ((payload && payload.items) || []);
+      if (payload && payload.lang && I18N_M) {
+        LANG_M = I18N_M.resolveLang(payload.lang, navigator.language || 'zh-CN');
+      }
+      rootItems = its;
+      stack = [];
+      render(rootItems);
+    });
     api.onMenuClose(() => { window.close(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') window.close(); });
     document.addEventListener('contextmenu', (e) => e.preventDefault());

@@ -534,6 +534,9 @@ if (langSel) {
     working.language = langSel.value;
     curLang = resolveLangFromConfig();
     applyStaticI18n();
+    // 即时同步给主进程：否则只有面板自己变了，托盘菜单 / 右键菜单 / 气泡
+    // 会一直停留在旧语言，直到用户点「保存」才生效（与「切换后立即生效」的说明不符）
+    if (api && typeof api.setLang === 'function') api.setLang(langSel.value);
     // 动态列表（素材名/食物名/台词/日程）需要重建才会用上新语言
     try {
       buildAssetList();
