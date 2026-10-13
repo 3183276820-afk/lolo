@@ -27,5 +27,5 @@ assets/videos/old_grab_drop_blackbg.png
 # 原始视频/图片素材（运行时不用，体积大，不入仓库）
 *.mp4
 *.webm
-/*.jpg
-/*.jpeg
+*.jpg
+*.jpeg
