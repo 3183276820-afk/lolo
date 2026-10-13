@@ -151,11 +151,19 @@ function collectPhrases() {
 }
 
 // ---------- 喂食食物管理 ----------
-function uploadFoodIcon(foodId, cb) {
+function uploadFoodIcon(foodId, idx, cb) {
   api.invoke(CH.PICK_FILE, { accept: 'image/*' }).then((res) => {
     if (!res) return;
     api.invoke(CH.UPLOAD_FOOD_ICON, { foodId, name: res.name, data: res.data })
-      .then((filename) => { cb(filename); });
+      .then((filename) => {
+        // 把图标写回面板工作副本，并立刻持久化到主进程 config，
+        // 否则：① 面板 working 里图标永远是空串、列表只显示「无」；
+        // ② 未点“保存”的新食物没进 config，handler 找不到它，
+        //    其末尾的 sendPanel(CONFIG_FOR_PANEL) 会用“没有该食物的 config”覆盖 working，把整条食物吞掉。
+        if (working.foods[idx]) working.foods[idx].icon = filename;
+        api.send(CH.SAVE_CONFIG, working);
+        cb(filename);
+      });
   }).catch((e) => { console.error('[lolo] 选择图标失败', e); });
 }
 
@@ -187,7 +195,7 @@ function buildFoodList() {
     const up = document.createElement('button');
     up.className = 'small ghost2';
     up.textContent = '上传图标';
-    up.onclick = () => uploadFoodIcon(f.id, (fn) => {
+    up.onclick = () => uploadFoodIcon(f.id, idx, (fn) => {
       working.foods[idx].icon = fn;
       buildFoodList();
     });

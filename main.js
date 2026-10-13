@@ -696,7 +696,10 @@ ipcMain.handle(CH.UPLOAD_FOOD_ICON, async (e, payload) => {
   if (f) f.icon = safeName;
   saveConfig(config);
   if (petWindow) petWindow.webContents.send(CH.CONFIG_UPDATED, configForPet(config));
-  sendPanel(CH.CONFIG_FOR_PANEL, config);
+  // 注意：这里不再 sendPanel(CONFIG_FOR_PANEL)。否则会用“主进程 config”整体覆盖面板
+  // working——而新增食物还没点“保存”进 config 时，config.foods 里没有它，覆盖后整条
+  // 新食物（含刚传的图标）会被一起抹掉。面板侧在回调里已 api.send(SAVE_CONFIG, working)
+  // 持久化并触发同步，无需此处再推。
   return safeName;
 });
 
