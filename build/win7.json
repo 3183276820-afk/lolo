@@ -1,0 +1,17 @@
+{
+  "extends": "./package.json",
+  "win": {
+    "target": [
+      "portable"
+    ],
+    "arch": [
+      "x64",
+      "ia32"
+    ],
+    "icon": "assets/icon/lolo.ico",
+    "signAndEditExecutable": false
+  },
+  "portable": {
+    "artifactName": "lolo桌宠-win7-${arch}.exe"
+  }
+}

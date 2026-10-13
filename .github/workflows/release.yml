@@ -1,0 +1,85 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  # 先建一个正式（非草稿）Release，供两个构建 job 上传产物，
+  # 避免 win / mac 并发各自创建 Release 导致 409 冲突。
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      - name: 创建 GitHub Release（正式发布，非草稿）
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-win:
+    needs: create-release
+    runs-on: windows-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: 安装依赖
+        run: npm ci
+      - name: 构建并发布 Windows（portable + nsis 安装版）
+        run: npx electron-builder --win --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-mac:
+    needs: create-release
+    runs-on: macos-latest
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: false   # 未签名，避免找不到证书报错退出
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: 安装依赖
+        run: npm ci
+      - name: 构建并发布 macOS（dmg x64 + arm64，未签名）
+        run: npx electron-builder --mac --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-win7:
+    needs: create-release
+    runs-on: windows-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: 安装依赖（主线 Electron 31）
+        run: npm ci
+      - name: 覆盖安装 Electron 22（最后一个官方支持 Win7/8.1 的版本）
+        run: npm install --no-save electron@22
+      - name: 构建并发布 Windows 7 专版（portable，ia32 + x64）
+        run: npx electron-builder --win --config build/win7.json --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

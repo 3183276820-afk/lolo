@@ -1067,6 +1067,9 @@ ipcMain.on(CH.BUBBLE_DISMISSED, (e, p) => {
 // 3) 不自动下载：先弹气泡询问，用户点击后才下载；下载完再点击才重启安装，绝不擅自重启。
 const IS_PORTABLE = !!process.env.PORTABLE_EXECUTABLE_FILE;
 const UPDATER_ENABLED = app.isPackaged && !IS_PORTABLE;
+// macOS 自动更新强制要求签名+公证（否则 quitAndInstall 被 Gatekeeper 拦截），
+// 未签名的 Mac 版改为「提醒 + 引导前往 Releases 手动下载」。
+const RELEASES_URL = 'https://github.com/3183276820-afk/lolo/releases';
 
 let autoUpdater = null;
 let updateStage = 'idle'; // idle | available | downloading | downloaded
@@ -1083,13 +1086,22 @@ if (UPDATER_ENABLED) {
   };
 
   autoUpdater.on('update-available', (info) => {
-    updateStage = 'available';
     const v = (info && info.version) || '';
     slog('[updater] 发现新版本 ' + v);
-    showBubbleNow({
-      kind: 'update', title: '发现新版本 v' + v,
-      text: 'lolo 有新版本啦，点击即可下载更新', hint: '点击下载更新', fontSize: 13
-    });
+    if (process.platform === 'darwin') {
+      // macOS 未签名：无法走 quitAndInstall 自动安装（Gatekeeper 会拦截），改为提醒并引导手动下载
+      updateStage = 'mac-guide';
+      showBubbleNow({
+        kind: 'update', title: '发现新版本 v' + v,
+        text: '点击前往 GitHub 下载新版 dmg', hint: '点击打开下载页', fontSize: 13
+      });
+    } else {
+      updateStage = 'available';
+      showBubbleNow({
+        kind: 'update', title: '发现新版本 v' + v,
+        text: 'lolo 有新版本啦，点击即可下载更新', hint: '点击下载更新', fontSize: 13
+      });
+    }
   });
 
   autoUpdater.on('update-not-available', () => {
@@ -1122,10 +1134,16 @@ if (UPDATER_ENABLED) {
   });
 }
 
-// 更新气泡被点击：依当前阶段推进（发现 → 下载；下载完 → 安装重启）
+// 更新气泡被点击：依当前阶段推进
 function handleUpdateBubbleClick() {
   if (!UPDATER_ENABLED || !autoUpdater) return;
   try {
+    if (updateStage === 'mac-guide') {
+      // macOS 未签名：不自动下载/安装，只引导用户去 Releases 手动下载
+      slog('[updater] Mac 引导：打开 Releases 下载页');
+      shell.openExternal(RELEASES_URL);
+      return;
+    }
     if (updateStage === 'available') {
       updateStage = 'downloading';
       slog('[updater] 用户确认，开始下载');
