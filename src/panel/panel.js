@@ -108,20 +108,11 @@ function buildAssetList() {
 }
 
 function uploadFor(state) {
-  const inp = document.createElement('input');
-  inp.type = 'file';
-  inp.accept = 'video/*';
-  inp.onchange = () => {
-    const f = inp.files[0];
-    if (!f) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      api.send(CH.UPLOAD_ASSET, { state, name: f.name, data: reader.result });
-      hint.textContent = '素材已上传，桌宠实时同步';
-    };
-    reader.readAsArrayBuffer(f);
-  };
-  inp.click();
+  api.invoke(CH.PICK_FILE, { accept: 'video/*' }).then((res) => {
+    if (!res) return;
+    api.send(CH.UPLOAD_ASSET, { state, name: res.name, data: res.data });
+    hint.textContent = '素材已上传，桌宠实时同步';
+  }).catch((e) => { console.error('[lolo] 选择视频失败', e); });
 }
 
 // ---------- 动作台词（不同动作对应相应的语句） ----------
@@ -161,20 +152,11 @@ function collectPhrases() {
 
 // ---------- 喂食食物管理 ----------
 function uploadFoodIcon(foodId, cb) {
-  const inp = document.createElement('input');
-  inp.type = 'file';
-  inp.accept = 'image/*';
-  inp.onchange = () => {
-    const f = inp.files[0];
-    if (!f) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      api.invoke(CH.UPLOAD_FOOD_ICON, { foodId, name: f.name, data: reader.result })
-        .then((filename) => { cb(filename); });
-    };
-    reader.readAsArrayBuffer(f);
-  };
-  inp.click();
+  api.invoke(CH.PICK_FILE, { accept: 'image/*' }).then((res) => {
+    if (!res) return;
+    api.invoke(CH.UPLOAD_FOOD_ICON, { foodId, name: res.name, data: res.data })
+      .then((filename) => { cb(filename); });
+  }).catch((e) => { console.error('[lolo] 选择图标失败', e); });
 }
 
 function buildFoodList() {

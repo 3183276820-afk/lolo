@@ -700,6 +700,30 @@ ipcMain.handle(CH.UPLOAD_FOOD_ICON, async (e, payload) => {
   return safeName;
 });
 
+// 通用文件选择：改用主进程 dialog.showOpenDialog，避免渲染进程动态 <input type=file>
+// 在 Electron 打包后不弹文件对话框（这是经典坑，导致“上传图标/上传素材”完全没反应）
+ipcMain.handle(CH.PICK_FILE, async (e, opts) => {
+  const accept = (opts && opts.accept) || 'image/*';
+  let filters = [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'] }];
+  if (accept.indexOf('video') >= 0) {
+    filters = [{ name: '视频', extensions: ['mp4', 'webm', 'mov', 'avi', 'mkv'] }];
+  }
+  try {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: '选择文件',
+      properties: ['openFile'],
+      filters
+    });
+    if (canceled || !filePaths || !filePaths.length) return null;
+    const p = filePaths[0];
+    const data = fs.readFileSync(p);
+    return { name: path.basename(p), data };
+  } catch (err) {
+    slog('[PICK_FILE] 失败:', err.message);
+    return null;
+  }
+});
+
 // 把一个素材文件名解析为可供 <img src> 使用的 file:// 绝对路径（面板预览用）
 ipcMain.handle(CH.ASSET_URL, async (e, name) => videoAbs(name || ''));
 

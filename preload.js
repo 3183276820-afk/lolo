@@ -12,6 +12,7 @@ const CH = {
   SAVE_CONFIG: 'panel:save-config',
   UPLOAD_ASSET: 'panel:upload-asset',
   UPLOAD_FOOD_ICON: 'panel:upload-food-icon',
+  PICK_FILE: 'panel:pick-file',
   ASSET_URL: 'panel:asset-url',
   RESET_DEFAULT: 'panel:reset-default',
   GET_BOUNDS: 'pet:get-bounds',
