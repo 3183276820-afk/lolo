@@ -28,6 +28,6 @@
     "signAndEditExecutable": false
   },
   "portable": {
-    "artifactName": "lolo桌宠-win7-${arch}.exe"
+    "artifactName": "lolo-desktop-pet-win7-${arch}.exe"
   }
 }

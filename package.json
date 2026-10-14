@@ -55,10 +55,10 @@
       "signAndEditExecutable": false
     },
     "portable": {
-      "artifactName": "lolo桌宠.exe"
+      "artifactName": "lolo-desktop-pet-${version}.exe"
     },
     "nsis": {
-      "artifactName": "lolo桌宠-setup-${version}.exe",
+      "artifactName": "lolo-desktop-pet-setup-${version}.exe",
       "createDesktopShortcut": true,
       "shortcutName": "lolo桌宠"
     },

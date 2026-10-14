@@ -46,7 +46,7 @@ jobs:
           | --- | --- | --- |
           | Windows 10 / 11 | `lolo-desktop-pet-setup-__VER__.exe` | 安装版，**支持自动更新** Installer with auto-update |
           | Windows 10 / 11 | `lolo-desktop-pet-__VER__.exe` | 便携版，免安装、不自动更新 Portable, no auto-update |
-          | Windows 7 | `lolo-win7-x64.exe` / `lolo-win7-ia32.exe` | 老系统专版（32 位选 ia32）Legacy build |
+          | Windows 7 | `lolo-desktop-pet-win7-x64.exe` / `lolo-desktop-pet-win7-ia32.exe` | 老系统专版（32 位选 ia32）Legacy build |
           | macOS（Intel 芯片） | `lolo-desktop-pet-__VER__-x64.dmg` | 未签名 Unsigned |
           | macOS（Apple 芯片 M 系列） | `lolo-desktop-pet-__VER__-arm64.dmg` | 未签名 Unsigned |
 
@@ -54,9 +54,9 @@ jobs:
           看到 **Intel** 下 `-x64.dmg`，看到 **Apple M1/M2/M3/M4** 下 `-arm64.dmg`。
 
           **Mac 首次打开**（未签名应用）：不要双击，在 dmg 上**右键 → 打开**；
-          若提示“已损坏 / damaged”，在终端执行 `xattr -cr /Applications/lolo桌宠.app` 后重开。
+          若提示“已损坏 / damaged”，在终端执行 `xattr -cr /Applications/lolo-desktop-pet.app` 后重开。
           On macOS: right-click the dmg → **Open**. If it says "damaged", run
-          `xattr -cr /Applications/lolo桌宠.app` in Terminal.
+          `xattr -cr /Applications/lolo-desktop-pet.app` in Terminal.
 
           **首次使用请看** 👉 `lolo-使用说明-User-Guide.md`（中英双语完整手册，软件内「面板 → 使用说明」也有同样内容）。
 
@@ -69,8 +69,8 @@ jobs:
           - Windows 10/11 便携版：https://ghfast.top/https://github.com/__REPO__/releases/download/v__VER__/lolo-desktop-pet-__VER__.exe
           - macOS (Intel 芯片)：https://ghfast.top/https://github.com/__REPO__/releases/download/v__VER__/lolo-desktop-pet-__VER__-x64.dmg
           - macOS (Apple M 系列)：https://ghfast.top/https://github.com/__REPO__/releases/download/v__VER__/lolo-desktop-pet-__VER__-arm64.dmg
-          - Windows 7 (64位)：https://ghfast.top/https://github.com/__REPO__/releases/download/v__VER__/lolo.-win7-x64.exe
-          - Windows 7 (32位)：https://ghfast.top/https://github.com/__REPO__/releases/download/v__VER__/lolo.-win7-ia32.exe
+          - Windows 7 (64位)：https://ghfast.top/https://github.com/__REPO__/releases/download/v__VER__/lolo-desktop-pet-win7-x64.exe
+          - Windows 7 (32位)：https://ghfast.top/https://github.com/__REPO__/releases/download/v__VER__/lolo-desktop-pet-win7-ia32.exe
 
           **想永久收藏、永远下到最新版？** 直接用下面这组"稳定直链"（链接里不带版本号，始终指向最新 Release）：
           - Win 安装版：https://ghfast.top/https://github.com/__REPO__/releases/latest/download/lolo-win-setup.exe
@@ -231,7 +231,7 @@ jobs:
       - name: 构建 Win7 专版（portable，ia32 + x64，不发布、不抢 latest.yml）
         run: npx electron-builder --win --ia32 --x64 --config build/win7.json
       - name: 上传 Win7 专版到 Release（与主线 latest.yml 隔离，不参与自动更新）
-        run: gh release upload ${{ github.ref_name }} "dist/lolo桌宠-win7-x64.exe" "dist/lolo桌宠-win7-ia32.exe" --repo "$RELEASE_REPO" --clobber
+        run: gh release upload ${{ github.ref_name }} "dist/lolo-desktop-pet-win7-x64.exe" "dist/lolo-desktop-pet-win7-ia32.exe" --repo "$RELEASE_REPO" --clobber
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
       - name: 上传"最新版"稳定别名（Win7，朋友永久收藏直链用）
@@ -239,6 +239,6 @@ jobs:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         shell: pwsh
         run: |
-          Copy-Item "dist/lolo桌宠-win7-x64.exe"  lolo-win7-x64.exe
-          Copy-Item "dist/lolo桌宠-win7-ia32.exe" lolo-win7-ia32.exe
+          Copy-Item "dist/lolo-desktop-pet-win7-x64.exe"  lolo-win7-x64.exe
+          Copy-Item "dist/lolo-desktop-pet-win7-ia32.exe" lolo-win7-ia32.exe
           gh release upload "${{ github.ref_name }}" lolo-win7-x64.exe lolo-win7-ia32.exe --repo "$RELEASE_REPO" --clobber
