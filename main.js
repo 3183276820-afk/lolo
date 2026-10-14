@@ -727,6 +727,13 @@ ipcMain.on(CH.SAVE_CONFIG, (e, newConfig) => {
   }
   // 专注配置变化时，重算剩余展示；运行中的计时保留
   broadcastFocusState();
+  // 喝水提醒开启后「立即响一次」作为验证：否则用户保存后毫无动静，
+  // 要等满一个间隔（默认 40 分钟）才会首次触发，极易误判成「没生效」。
+  // 立即触发后把下次时间重置为「现在 + 间隔」，避免紧接着又被引擎重复触发。
+  if (config.water && config.water.enabled) {
+    triggerReminder('water', t('notify.water.title'), t('notify.water.body'));
+    waterNextAt = Date.now() + (config.water.intervalMin || 40) * 60000;
+  }
 });
 
 // 面板切换语言下拉时即时生效（不必等「保存」）。
@@ -925,6 +932,7 @@ function buildPetMenuItems() {
     { label: t('menu.cheer'), action: 'cheer' },
     { label: t('menu.turn'), action: 'turn' },
     { label: t('menu.feed'), action: 'feed' },
+    { label: t('menu.drink'), action: 'drink' },
     { sep: true }
   ];
   if (focus.phase === 'running') {
@@ -969,6 +977,7 @@ function performMenuAction(action, arg) {
     case 'cheer':
     case 'turn':
     case 'feed':
+    case 'drink':
       petAction(action);
       break;
     case 'idle-restore':

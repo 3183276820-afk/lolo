@@ -734,7 +734,8 @@ const PET_MENU_ACTIONS = {
   upside_down: () => { beginAction('upside_down'); setState('upside_down'); sayFor('upside_down'); },
   cheer: () => { beginAction('cheer'); setState('cheer'); sayFor('cheer'); },
   turn: () => { playTurn(); sayFor('turn'); },
-  feed: () => { lastInteraction = Date.now(); openFoodPicker(); }
+  feed: () => { lastInteraction = Date.now(); openFoodPicker(); },
+  drink: () => { beginAction('drink'); setState('drink', { force: true }); sayFor('drink'); }
 };
 
 api.onPetMenu((action) => {
