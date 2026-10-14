@@ -1185,7 +1185,7 @@ const UPDATER_ENABLED = app.isPackaged && !IS_PORTABLE;
 // 未签名的 Mac 版改为「提醒 + 引导前往 Releases 手动下载」。
 // 注意：必须指向「分发仓库 lolo-pet」而不是源码仓库 lolo ——
 // 所有 Release 产物都发布在 lolo-pet（公开），lolo 是源码仓库（拟转私有，转了就会 404）
-const RELEASES_URL = 'https://github.com/3183276820-afk/lolo-pet/releases';
+const RELEASES_URL = 'https://github.com/bobobizzz/lolo-pet/releases';
 
 let autoUpdater = null;
 let updateStage = 'idle'; // idle | available | downloading | downloaded

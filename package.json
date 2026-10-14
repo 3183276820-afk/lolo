@@ -41,7 +41,7 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "3183276820-afk",
+        "owner": "bobobizzz",
         "repo": "lolo-pet",
         "releaseType": "release"
       }

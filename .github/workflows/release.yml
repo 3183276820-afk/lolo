@@ -64,11 +64,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
-          if gh release view "${{ github.ref_name }}" --repo 3183276820-afk/lolo-pet >/dev/null 2>&1; then
+          if gh release view "${{ github.ref_name }}" --repo bobobizzz/lolo-pet >/dev/null 2>&1; then
             echo "Release ${{ github.ref_name }} 已存在于 lolo-pet，跳过创建（幂等）。"
           else
             gh release create "${{ github.ref_name }}" \
-              --repo 3183276820-afk/lolo-pet \
+              --repo bobobizzz/lolo-pet \
               --title "${{ github.ref_name }}" \
               --notes-file release-notes.md \
               --latest
@@ -79,7 +79,7 @@ jobs:
         run: |
           if [ -f "docs/lolo-使用说明-User-Guide.md" ]; then
             gh release upload "${{ github.ref_name }}" "docs/lolo-使用说明-User-Guide.md" \
-              --repo 3183276820-afk/lolo-pet --clobber
+              --repo bobobizzz/lolo-pet --clobber
             echo "说明书已上传"
           else
             echo "::warning::未找到 docs/lolo-使用说明-User-Guide.md，跳过上传"
@@ -153,6 +153,6 @@ jobs:
       - name: 构建 Win7 专版（portable，ia32 + x64，不发布、不抢 latest.yml）
         run: npx electron-builder --win --ia32 --x64 --config build/win7.json
       - name: 上传 Win7 专版到 Release（与主线 latest.yml 隔离，不参与自动更新）
-        run: gh release upload ${{ github.ref_name }} "dist/lolo桌宠-win7-x64.exe" "dist/lolo桌宠-win7-ia32.exe" --repo 3183276820-afk/lolo-pet --clobber
+        run: gh release upload ${{ github.ref_name }} "dist/lolo桌宠-win7-x64.exe" "dist/lolo桌宠-win7-ia32.exe" --repo bobobizzz/lolo-pet --clobber
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}

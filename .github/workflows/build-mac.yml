@@ -61,4 +61,4 @@ jobs:
             echo "未找到 dmg 产物，跳过上传。"
             exit 1
           fi
-          gh release upload "$TAG" "${files[@]}" --repo 3183276820-afk/lolo-pet --clobber
+          gh release upload "$TAG" "${files[@]}" --repo bobobizzz/lolo-pet --clobber
