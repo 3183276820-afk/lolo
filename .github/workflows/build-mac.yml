@@ -28,6 +28,12 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v4
 
+      - name: 解析发布仓库（单一事实源 = package.json 的 build.publish，改名只改那一处）
+        shell: bash
+        run: |
+          node -e "const p=require('./package.json'); process.stdout.write('RELEASE_REPO=' + p.build.publish.owner + '/' + p.build.publish.repo + '\n')" >> "$GITHUB_ENV"
+          echo "发布仓库: $RELEASE_REPO"
+
       - name: 设置 Node.js
         uses: actions/setup-node@v4
         with:
@@ -61,4 +67,4 @@ jobs:
             echo "未找到 dmg 产物，跳过上传。"
             exit 1
           fi
-          gh release upload "$TAG" "${files[@]}" --repo bobobizzz/lolo-pet --clobber
+          gh release upload "$TAG" "${files[@]}" --repo "$RELEASE_REPO" --clobber

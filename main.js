@@ -1185,6 +1185,8 @@ const UPDATER_ENABLED = app.isPackaged && !IS_PORTABLE;
 // 未签名的 Mac 版改为「提醒 + 引导前往 Releases 手动下载」。
 // 注意：必须指向「分发仓库 lolo-pet」而不是源码仓库 lolo ——
 // 所有 Release 产物都发布在 lolo-pet（公开），lolo 是源码仓库（拟转私有，转了就会 404）
+// ★ 本链接的仓库名须与 package.json 的 build.publish（owner/repo）保持一致。
+//   那是【单一事实源】；CI 已自动读取它，改名时此处请同步改这一行即可。
 const RELEASES_URL = 'https://github.com/bobobizzz/lolo-pet/releases';
 
 let autoUpdater = null;

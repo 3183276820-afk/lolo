@@ -22,6 +22,11 @@ jobs:
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
+      - name: 解析发布仓库（单一事实源 = package.json 的 build.publish，改名只改那一处）
+        shell: bash
+        run: |
+          node -e "const p=require('./package.json'); process.stdout.write('RELEASE_REPO=' + p.build.publish.owner + '/' + p.build.publish.repo + '\n')" >> "$GITHUB_ENV"
+          echo "发布仓库: $RELEASE_REPO"
       - name: 校验 RELEASE_TOKEN 已配置
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
@@ -64,11 +69,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
-          if gh release view "${{ github.ref_name }}" --repo bobobizzz/lolo-pet >/dev/null 2>&1; then
-            echo "Release ${{ github.ref_name }} 已存在于 lolo-pet，跳过创建（幂等）。"
+          if gh release view "${{ github.ref_name }}" --repo "$RELEASE_REPO" >/dev/null 2>&1; then
+            echo "Release ${{ github.ref_name }} 已存在于 $RELEASE_REPO，跳过创建（幂等）。"
           else
             gh release create "${{ github.ref_name }}" \
-              --repo bobobizzz/lolo-pet \
+              --repo "$RELEASE_REPO" \
               --title "${{ github.ref_name }}" \
               --notes-file release-notes.md \
               --latest
@@ -79,7 +84,7 @@ jobs:
         run: |
           if [ -f "docs/lolo-使用说明-User-Guide.md" ]; then
             gh release upload "${{ github.ref_name }}" "docs/lolo-使用说明-User-Guide.md" \
-              --repo bobobizzz/lolo-pet --clobber
+              --repo "$RELEASE_REPO" --clobber
             echo "说明书已上传"
           else
             echo "::warning::未找到 docs/lolo-使用说明-User-Guide.md，跳过上传"
@@ -141,6 +146,11 @@ jobs:
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
+      - name: 解析发布仓库（单一事实源 = package.json 的 build.publish）
+        shell: bash
+        run: |
+          node -e "const p=require('./package.json'); process.stdout.write('RELEASE_REPO=' + p.build.publish.owner + '/' + p.build.publish.repo + '\n')" >> "$GITHUB_ENV"
+          echo "发布仓库: $RELEASE_REPO"
       - name: 设置 Node.js
         uses: actions/setup-node@v4
         with:
@@ -153,6 +163,6 @@ jobs:
       - name: 构建 Win7 专版（portable，ia32 + x64，不发布、不抢 latest.yml）
         run: npx electron-builder --win --ia32 --x64 --config build/win7.json
       - name: 上传 Win7 专版到 Release（与主线 latest.yml 隔离，不参与自动更新）
-        run: gh release upload ${{ github.ref_name }} "dist/lolo桌宠-win7-x64.exe" "dist/lolo桌宠-win7-ia32.exe" --repo bobobizzz/lolo-pet --clobber
+        run: gh release upload ${{ github.ref_name }} "dist/lolo桌宠-win7-x64.exe" "dist/lolo桌宠-win7-ia32.exe" --repo "$RELEASE_REPO" --clobber
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
