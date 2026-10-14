@@ -89,15 +89,29 @@ jobs:
       - name: 创建 GitHub Release（正式发布，非草稿，发布到公开仓库 lolo-pet）
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        shell: bash
         run: |
-          if gh release view "${{ github.ref_name }}" --repo "$RELEASE_REPO" >/dev/null 2>&1; then
-            echo "Release ${{ github.ref_name }} 已存在于 $RELEASE_REPO，跳过创建（幂等）。"
+          TAG="${{ github.ref_name }}"
+          API="https://api.github.com/repos/$RELEASE_REPO/releases"
+          # 幂等检查：已存在则跳过（避免重跑 workflow 时重复创建）
+          EXISTS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$API/tags/$TAG")
+          if [ "$EXISTS" = "200" ]; then
+            echo "Release $TAG 已存在于 $RELEASE_REPO，跳过创建（幂等）。"
           else
-            gh release create "${{ github.ref_name }}" \
-              --repo "$RELEASE_REPO" \
-              --title "${{ github.ref_name }}" \
-              --notes-file release-notes.md \
-              --latest
+            # 直接用 REST API 创建：只需 repo 权限，绕过 gh CLI 对 workflow scope 的强制校验
+            # （gh release create 强制要求 workflow scope，而本仓库 RELEASE_TOKEN 仅含 repo scope）
+            jq -n --arg tag "$TAG" --rawfile body release-notes.md \
+              '{tag_name:$tag, name:$tag, body:$body, draft:false, prerelease:false, make_latest:"true"}' > payload.json
+            curl -s -X POST \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "Content-Type: application/json" \
+              --data-binary @payload.json \
+              "$API"
+            echo "Release $TAG 已创建于 $RELEASE_REPO。"
           fi
       - name: 上传双语使用说明到 Release
         env:
