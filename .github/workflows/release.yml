@@ -25,7 +25,7 @@ jobs:
       - name: 解析发布仓库（单一事实源 = package.json 的 build.publish，改名只改那一处）
         shell: bash
         run: |
-          node -e "const p=require('./package.json'); process.stdout.write('RELEASE_REPO=' + p.build.publish.owner + '/' + p.build.publish.repo + '\n')" >> "$GITHUB_ENV"
+          node -e "const p=require('./package.json'); const pub=Array.isArray(p.build.publish)?p.build.publish[0]:p.build.publish; process.stdout.write('RELEASE_REPO=' + pub.owner + '/' + pub.repo + '\n')" >> "$GITHUB_ENV"
           echo "发布仓库: $RELEASE_REPO"
       - name: 校验 RELEASE_TOKEN 已配置
         env:
@@ -92,6 +92,10 @@ jobs:
         shell: bash
         run: |
           TAG="${{ github.ref_name }}"
+          if [ -z "$RELEASE_REPO" ] || [[ "$RELEASE_REPO" == *undefined* ]]; then
+            echo "::error::RELEASE_REPO 解析失败（=$RELEASE_REPO），请检查 package.json 的 build.publish[0].owner/repo"
+            exit 1
+          fi
           API="https://api.github.com/repos/$RELEASE_REPO/releases"
           # 幂等检查：已存在则跳过（避免重跑 workflow 时重复创建）
           EXISTS=$(curl -s -o /dev/null -w "%{http_code}" \
@@ -105,12 +109,15 @@ jobs:
             # （gh release create 强制要求 workflow scope，而本仓库 RELEASE_TOKEN 仅含 repo scope）
             jq -n --arg tag "$TAG" --rawfile body release-notes.md \
               '{tag_name:$tag, name:$tag, body:$body, draft:false, prerelease:false, make_latest:"true"}' > payload.json
-            curl -s -X POST \
+            HTTP=$(curl -s -o create-resp.json -w "%{http_code}" -X POST \
               -H "Authorization: Bearer $GH_TOKEN" \
               -H "Accept: application/vnd.github+json" \
               -H "Content-Type: application/json" \
               --data-binary @payload.json \
-              "$API"
+              "$API")
+            if [ "$HTTP" != "201" ]; then
+              echo "::error::创建 Release 失败，HTTP $HTTP"; cat create-resp.json; exit 1
+            fi
             echo "Release $TAG 已创建于 $RELEASE_REPO。"
           fi
       - name: 上传双语使用说明到 Release
@@ -145,7 +152,7 @@ jobs:
       - name: 解析发布仓库（供别名上传）
         shell: bash
         run: |
-          node -e "const p=require('./package.json'); process.stdout.write('RELEASE_REPO=' + p.build.publish.owner + '/' + p.build.publish.repo + '\n')" >> "$GITHUB_ENV"
+          node -e "const p=require('./package.json'); const pub=Array.isArray(p.build.publish)?p.build.publish[0]:p.build.publish; process.stdout.write('RELEASE_REPO=' + pub.owner + '/' + pub.repo + '\n')" >> "$GITHUB_ENV"
       - name: 上传"最新版"稳定别名（朋友永久收藏直链用，永远指向最新）
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
@@ -191,7 +198,7 @@ jobs:
       - name: 解析发布仓库（供别名上传）
         shell: bash
         run: |
-          node -e "const p=require('./package.json'); process.stdout.write('RELEASE_REPO=' + p.build.publish.owner + '/' + p.build.publish.repo + '\n')" >> "$GITHUB_ENV"
+          node -e "const p=require('./package.json'); const pub=Array.isArray(p.build.publish)?p.build.publish[0]:p.build.publish; process.stdout.write('RELEASE_REPO=' + pub.owner + '/' + pub.repo + '\n')" >> "$GITHUB_ENV"
       - name: 上传"最新版"稳定别名（朋友永久收藏直链用，永远指向最新）
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
@@ -210,7 +217,7 @@ jobs:
       - name: 解析发布仓库（单一事实源 = package.json 的 build.publish）
         shell: bash
         run: |
-          node -e "const p=require('./package.json'); process.stdout.write('RELEASE_REPO=' + p.build.publish.owner + '/' + p.build.publish.repo + '\n')" >> "$GITHUB_ENV"
+          node -e "const p=require('./package.json'); const pub=Array.isArray(p.build.publish)?p.build.publish[0]:p.build.publish; process.stdout.write('RELEASE_REPO=' + pub.owner + '/' + pub.repo + '\n')" >> "$GITHUB_ENV"
           echo "发布仓库: $RELEASE_REPO"
       - name: 设置 Node.js
         uses: actions/setup-node@v4
