@@ -72,6 +72,14 @@ jobs:
           - Windows 7 (64位)：https://ghfast.top/https://github.com/__REPO__/releases/download/v__VER__/lolo.-win7-x64.exe
           - Windows 7 (32位)：https://ghfast.top/https://github.com/__REPO__/releases/download/v__VER__/lolo.-win7-ia32.exe
 
+          **想永久收藏、永远下到最新版？** 直接用下面这组"稳定直链"（链接里不带版本号，始终指向最新 Release）：
+          - Win 安装版：https://ghfast.top/https://github.com/__REPO__/releases/latest/download/lolo-win-setup.exe
+          - Win 便携版：https://ghfast.top/https://github.com/__REPO__/releases/latest/download/lolo-win-portable.exe
+          - Mac Intel：https://ghfast.top/https://github.com/__REPO__/releases/latest/download/lolo-mac-intel.dmg
+          - Mac Apple M：https://ghfast.top/https://github.com/__REPO__/releases/latest/download/lolo-mac-apple.dmg
+          - Win7 x64：https://ghfast.top/https://github.com/__REPO__/releases/latest/download/lolo-win7-x64.exe
+          - Win7 32位：https://ghfast.top/https://github.com/__REPO__/releases/latest/download/lolo-win7-ia32.exe
+
           （备用前缀：ghproxy.net / mirror.ghproxy.com，拼法相同：`前缀 + 原 github 文件链接`）
           EOF
           sed -i "s/__VER__/${VER}/g" release-notes.md
@@ -120,6 +128,20 @@ jobs:
         run: npx electron-builder --win --publish always
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      - name: 解析发布仓库（供别名上传）
+        shell: bash
+        run: |
+          node -e "const p=require('./package.json'); process.stdout.write('RELEASE_REPO=' + p.build.publish.owner + '/' + p.build.publish.repo + '\n')" >> "$GITHUB_ENV"
+      - name: 上传"最新版"稳定别名（朋友永久收藏直链用，永远指向最新）
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        shell: pwsh
+        run: |
+          $setup = (Get-Item dist/lolo-desktop-pet-setup-*.exe | Select-Object -First 1).FullName
+          $port  = (Get-Item dist/lolo-desktop-pet-*.exe | Where-Object { $_.Name -notlike '*setup*' } | Select-Object -First 1).FullName
+          Copy-Item $setup lolo-win-setup.exe
+          Copy-Item $port  lolo-win-portable.exe
+          gh release upload "${{ github.ref_name }}" lolo-win-setup.exe lolo-win-portable.exe --repo "$RELEASE_REPO" --clobber
 
   build-mac:
     needs: create-release
@@ -152,6 +174,18 @@ jobs:
       # 若有人把 mac.artifactName 改回含中文的名字，这里会红叉报警（详见脚本内注释）。
       - name: 校验 x64 / arm64 的 dmg 文件名互不冲突
         run: node build/verify-dmg-names.js
+      - name: 解析发布仓库（供别名上传）
+        shell: bash
+        run: |
+          node -e "const p=require('./package.json'); process.stdout.write('RELEASE_REPO=' + p.build.publish.owner + '/' + p.build.publish.repo + '\n')" >> "$GITHUB_ENV"
+      - name: 上传"最新版"稳定别名（朋友永久收藏直链用，永远指向最新）
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          VER="${GITHUB_REF_NAME#v}"
+          cp "dist/lolo-desktop-pet-${VER}-x64.dmg"   lolo-mac-intel.dmg
+          cp "dist/lolo-desktop-pet-${VER}-arm64.dmg" lolo-mac-apple.dmg
+          gh release upload "${{ github.ref_name }}" lolo-mac-intel.dmg lolo-mac-apple.dmg --repo "$RELEASE_REPO" --clobber
 
   build-win7:
     needs: create-release
@@ -179,3 +213,11 @@ jobs:
         run: gh release upload ${{ github.ref_name }} "dist/lolo桌宠-win7-x64.exe" "dist/lolo桌宠-win7-ia32.exe" --repo "$RELEASE_REPO" --clobber
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      - name: 上传"最新版"稳定别名（Win7，朋友永久收藏直链用）
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        shell: pwsh
+        run: |
+          Copy-Item "dist/lolo桌宠-win7-x64.exe"  lolo-win7-x64.exe
+          Copy-Item "dist/lolo桌宠-win7-ia32.exe" lolo-win7-ia32.exe
+          gh release upload "${{ github.ref_name }}" lolo-win7-x64.exe lolo-win7-ia32.exe --repo "$RELEASE_REPO" --clobber
