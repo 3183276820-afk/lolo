@@ -235,6 +235,7 @@ jobs:
       - name: 上传 Win7 专版到 Release（与主线 latest.yml 隔离，不参与自动更新）
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        shell: bash
         run: |
           source build/ensure-release.sh && ensure_release "${{ github.ref_name }}"
           gh release upload ${{ github.ref_name }} "dist/lolo-desktop-pet-win7-x64.exe" "dist/lolo-desktop-pet-win7-ia32.exe" --repo "$RELEASE_REPO" --clobber
