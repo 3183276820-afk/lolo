@@ -163,7 +163,7 @@ jobs:
           Copy-Item $setup lolo-win-setup.exe
           Copy-Item $port  lolo-win-portable.exe
           . ./build/ensure-release.ps1 ; Ensure-Release "${{ github.ref_name }}"
-          gh release upload "${{ github.ref_name }}" lolo-win-setup.exe lolo-win-portable.exe --repo "$RELEASE_REPO" --clobber
+          gh release upload "${{ github.ref_name }}" lolo-win-setup.exe lolo-win-portable.exe --repo "$env:RELEASE_REPO" --clobber
 
   build-mac:
     needs: create-release
@@ -247,4 +247,4 @@ jobs:
           Copy-Item "dist/lolo-desktop-pet-win7-x64.exe"  lolo-win7-x64.exe
           Copy-Item "dist/lolo-desktop-pet-win7-ia32.exe" lolo-win7-ia32.exe
           . ./build/ensure-release.ps1 ; Ensure-Release "${{ github.ref_name }}"
-          gh release upload "${{ github.ref_name }}" lolo-win7-x64.exe lolo-win7-ia32.exe --repo "$RELEASE_REPO" --clobber
+          gh release upload "${{ github.ref_name }}" lolo-win7-x64.exe lolo-win7-ia32.exe --repo "$env:RELEASE_REPO" --clobber
