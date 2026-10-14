@@ -61,8 +61,13 @@ jobs:
           **首次使用请看** 👉 `lolo-使用说明-User-Guide.md`（中英双语完整手册，软件内「面板 → 使用说明」也有同样内容）。
 
           **See the User Guide** 👉 `lolo-使用说明-User-Guide.md` — bilingual manual (Chinese + English). The same guide is built into the app under Panel → User Guide.
+
+          **国内用户下载慢 / 打不开 GitHub？** 用反代直链（免代理）：
+          https://ghfast.top/https://github.com/__REPO__/releases
+          （备用前缀：ghproxy.net / mirror.ghproxy.com，拼法相同：`前缀 + 原 github 链接`；Mac 请用 Chrome/Edge 或 `curl -L`，别用 Safari）
           EOF
           sed -i "s/__VER__/${VER}/g" release-notes.md
+          sed -i "s|__REPO__|${RELEASE_REPO}|g" release-notes.md
           echo "发布说明已生成（版本 ${VER}）"
           cat release-notes.md
       - name: 创建 GitHub Release（正式发布，非草稿，发布到公开仓库 lolo-pet）
