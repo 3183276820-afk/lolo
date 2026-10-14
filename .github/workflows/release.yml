@@ -162,6 +162,7 @@ jobs:
           $port  = (Get-Item dist/lolo-desktop-pet-*.exe | Where-Object { $_.Name -notlike '*setup*' } | Select-Object -First 1).FullName
           Copy-Item $setup lolo-win-setup.exe
           Copy-Item $port  lolo-win-portable.exe
+          . ./build/ensure-release.ps1 ; Ensure-Release "${{ github.ref_name }}"
           gh release upload "${{ github.ref_name }}" lolo-win-setup.exe lolo-win-portable.exe --repo "$RELEASE_REPO" --clobber
 
   build-mac:
@@ -206,6 +207,7 @@ jobs:
           VER="${GITHUB_REF_NAME#v}"
           cp "dist/lolo-desktop-pet-${VER}-x64.dmg"   lolo-mac-intel.dmg
           cp "dist/lolo-desktop-pet-${VER}-arm64.dmg" lolo-mac-apple.dmg
+          source build/ensure-release.sh && ensure_release "${{ github.ref_name }}"
           gh release upload "${{ github.ref_name }}" lolo-mac-intel.dmg lolo-mac-apple.dmg --repo "$RELEASE_REPO" --clobber
 
   build-win7:
@@ -231,9 +233,11 @@ jobs:
       - name: 构建 Win7 专版（portable，ia32 + x64，不发布、不抢 latest.yml）
         run: npx electron-builder --win --ia32 --x64 --config build/win7.json
       - name: 上传 Win7 专版到 Release（与主线 latest.yml 隔离，不参与自动更新）
-        run: gh release upload ${{ github.ref_name }} "dist/lolo-desktop-pet-win7-x64.exe" "dist/lolo-desktop-pet-win7-ia32.exe" --repo "$RELEASE_REPO" --clobber
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          source build/ensure-release.sh && ensure_release "${{ github.ref_name }}"
+          gh release upload ${{ github.ref_name }} "dist/lolo-desktop-pet-win7-x64.exe" "dist/lolo-desktop-pet-win7-ia32.exe" --repo "$RELEASE_REPO" --clobber
       - name: 上传"最新版"稳定别名（Win7，朋友永久收藏直链用）
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
@@ -241,4 +245,5 @@ jobs:
         run: |
           Copy-Item "dist/lolo-desktop-pet-win7-x64.exe"  lolo-win7-x64.exe
           Copy-Item "dist/lolo-desktop-pet-win7-ia32.exe" lolo-win7-ia32.exe
+          . ./build/ensure-release.ps1 ; Ensure-Release "${{ github.ref_name }}"
           gh release upload "${{ github.ref_name }}" lolo-win7-x64.exe lolo-win7-ia32.exe --repo "$RELEASE_REPO" --clobber
