@@ -150,6 +150,32 @@ chmod +x ~/Desktop/启动lolo.command
 
 ## 四、常见问题
 
+### 连 Electron 本体都被拦（「未打开 Electron.app，因其包含恶意软件」）？
+
+macOS 对 **Electron 官方二进制**（本身也未公证）一视同仁。处理步骤：
+
+1. **恢复被删的 Electron**（被移到废纸篓了就重装依赖）：
+   ```bash
+   cd ~/lolo/lolo-main
+   rm -rf node_modules/electron
+   npm install electron@31
+   ```
+2. **清除它的隔离标记**：
+   ```bash
+   xattr -cr ~/lolo/lolo-main/node_modules/electron/dist/Electron.app
+   ```
+3. **临时关闭 Gatekeeper**（一劳永逸，Electron 和其他未签名软件都不再被拦）：
+   ```bash
+   sudo spctl --master-disable
+   ```
+   → 系统设置 → 隐私与安全性 → 允许以下来源 → 选「**任何来源**」
+4. 再启动：`npm start`（或双击桌面「启动lolo」）
+5. 想恢复安全设置：`sudo spctl --master-enable`
+
+> 新版一键脚本已在装完依赖后**自动执行第 2 步**，且桌面启动器**每次启动前也会自动清一次标记**。
+
+### 其他常见问题
+
 | 现象 | 原因 / 解决 |
 |---|---|
 | `npm install` 卡住很久不动 | 第 3 步的 `export ELECTRON_MIRROR` 没配，或换了新终端窗口。回到第 3 步重配，**在同一窗口**重新 `npm install`。 |

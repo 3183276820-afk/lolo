@@ -89,12 +89,20 @@ PKG
   echo "✔ 依赖安装完成"
 fi
 
+# ---------- 4.5 清除 Electron 的隔离标记 ----------
+# Electron 官方二进制也未公证，macOS Sequoia 会把它当"恶意软件"删进废纸篓
+if [ -d "$SRC_DIR/node_modules/electron/dist/Electron.app" ]; then
+  xattr -cr "$SRC_DIR/node_modules/electron/dist/Electron.app" 2>/dev/null || true
+  echo "✔ 已清除 Electron 隔离标记"
+fi
+
 # ---------- 5. 生成桌面双击启动器 ----------
 # 本机创建的文件不带「网上下载」标记，所以不会被 Gatekeeper 拦截
 echo "⚙ 生成桌面启动图标..."
 cat > "$DESKTOP_LAUNCHER" <<EOF
 #!/bin/bash
 cd "$SRC_DIR"
+xattr -cr node_modules/electron/dist/Electron.app 2>/dev/null
 exec npm start
 EOF
 chmod +x "$DESKTOP_LAUNCHER"
