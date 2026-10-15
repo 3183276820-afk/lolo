@@ -58,13 +58,21 @@ fi
 
 cd "$SRC_DIR"
 
-# ---------- 3. 配置国内镜像 ----------
+# ---------- 3.5 自愈：上次运行中断留下的临时 package.json ----------
+# 安装期间用的是临时 package.json，若中途断开会残留备份文件；不恢复的话
+# 下一次 npm start 会因为找不到 start 脚本而失败
+if [ -f "$SRC_DIR/package.json.lolo.bak" ]; then
+  echo "⚙ 发现上次中断的残留，正在恢复 package.json..."
+  mv -f "$SRC_DIR/package.json.lolo.bak" "$SRC_DIR/package.json"
+fi
+
+# ---------- 4. 配置国内镜像 ----------
 # 关键：不配的话 Electron 本体从 GitHub 拉取，国内基本会卡死
 echo "⚙ 配置国内加速镜像..."
 npm config set registry https://registry.npmmirror.com
 export ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
 
-# ---------- 4. 安装运行依赖 ----------
+# ---------- 5. 安装运行依赖 ----------
 # 只装 electron + electron-updater，用临时 package.json 避开
 # electron-builder / javascript-obfuscator / rcedit 这些打包期才用得着的大件
 if [ -d "$SRC_DIR/node_modules/electron/dist/Electron.app" ]; then
@@ -91,7 +99,7 @@ PKG
   echo "✔ 依赖安装完成"
 fi
 
-# ---------- 4.5 清除 Electron 的隔离标记 ----------
+# ---------- 5.5 清除 Electron 的隔离标记 ----------
 # Electron 官方二进制也未公证，macOS Sequoia 会把它当"恶意软件"删进废纸篓
 if [ -d "$SRC_DIR/node_modules/electron/dist/Electron.app" ]; then
   xattr -cr "$SRC_DIR/node_modules/electron/dist/Electron.app" 2>/dev/null || true
