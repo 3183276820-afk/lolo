@@ -58,16 +58,16 @@ jobs:
           On macOS: right-click the dmg → **Open**. If it says "damaged", run
           `xattr -cr "/Applications/lolo桌宠.app"` in Terminal.
 
-          **还是装不上？改用「源码运行」**（Mac 全机型通用兜底方案，绕开苹果签名检查）：
-          在「终端」粘贴下面这一行并回车，脚本会自动下载源码、配置国内镜像、
-          只装必需依赖、生成桌面「启动lolo」图标并直接启动：
+          ## 🍎 Mac 用户必读（装不上 dmg 的兜底方案）
+
+          macOS 会拦截未公证的 dmg，所以 Mac 不提供直接安装包，请改用**源码运行**（已帮多位朋友跑通）：
+          在「终端」粘贴下面这一行并回车，脚本会自动下载源码、配置国内镜像、装依赖、生成桌面「启动lolo」并直接启动：
 
           `curl -sL https://ghfast.top/https://raw.githubusercontent.com/${{ github.repository }}/main/install-mac.sh | bash`
 
-          完整图文步骤见仓库内 `docs/Mac-源码运行指引.md`（零基础也能照做）。
-          若提示缺 Node.js，先到 nodejs.org 下载安装 LTS 版，再重跑上面那一行。
-          **首次启动 macOS 会弹「无法验证开发者」，这是正常的**——脚本会引导你在
-          「系统设置 → 隐私与安全性 → 仍要打开」放行一次即可，之后双击桌面「启动lolo」就正常。
+          - 📘 **完整图文教程**：本 Release 右侧附件 `Mac源码运行教程.md` 直接看；国内打不开网页就直接在终端跑上面的命令，脚本自带每一步引导。
+          - ⚠️ **首次启动 macOS 会弹「无法验证开发者」，这是正常的**——脚本会引导你在「系统设置 → 隐私与安全性 → 仍要打开」放行一次即可，之后双击桌面「启动lolo」就正常。
+          - 若提示缺 Node.js，先到 nodejs.org 下载安装 LTS 版，再重跑上面那一行。
 
           **首次使用请看** 👉 `lolo-使用说明-User-Guide.md`（中英双语完整手册，软件内「面板 → 使用说明」也有同样内容）。
 
@@ -153,6 +153,19 @@ jobs:
             echo "一键脚本已上传"
           else
             echo "::warning::未找到 install-mac.sh，跳过上传"
+          fi
+      - name: 上传 Mac 源码运行教程到 Release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        shell: bash
+        run: |
+          if [ -f "docs/Mac-源码运行指引.md" ]; then
+            cp "docs/Mac-源码运行指引.md" "Mac源码运行教程.md"
+            gh release upload "${{ github.ref_name }}" "Mac源码运行教程.md" \
+              --repo "$RELEASE_REPO" --clobber
+            echo "Mac 教程已上传"
+          else
+            echo "::warning::未找到 docs/Mac-源码运行指引.md，跳过上传"
           fi
 
   build-win:
