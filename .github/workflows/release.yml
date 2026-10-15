@@ -64,8 +64,10 @@ jobs:
 
           `curl -sL https://ghfast.top/https://raw.githubusercontent.com/${{ github.repository }}/main/install-mac.sh | bash`
 
-          完整图文步骤见仓库内 `docs/Mac-源码运行指引.md`；
+          完整图文步骤见仓库内 `docs/Mac-源码运行指引.md`（零基础也能照做）。
           若提示缺 Node.js，先到 nodejs.org 下载安装 LTS 版，再重跑上面那一行。
+          **首次启动 macOS 会弹「无法验证开发者」，这是正常的**——脚本会引导你在
+          「系统设置 → 隐私与安全性 → 仍要打开」放行一次即可，之后双击桌面「启动lolo」就正常。
 
           **首次使用请看** 👉 `lolo-使用说明-User-Guide.md`（中英双语完整手册，软件内「面板 → 使用说明」也有同样内容）。
 

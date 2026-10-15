@@ -184,24 +184,47 @@ fi
 # ---------- 7. 启动 ----------
 echo ""
 echo "=========================================="
-echo "  正在启动 lolo..."
-echo "  以后打开：双击桌面上的「启动lolo」"
-echo "  首次若弹「无法验证开发者」：系统设置 → 隐私与安全性 → 仍要打开（只需一次）"
+echo "  正在尝试启动 lolo..."
+echo "=========================================="
+echo ""
+echo "  ⚠ 首次启动时，macOS 几乎一定会弹「无法验证开发者」"
+echo "     这很正常——Electron 没有做苹果付费公证，系统只是例行盘问。"
+echo "     照下面做，最多一次就能永久解决："
+echo ""
+echo "     方式一（推荐，只需放行一次）："
+echo "       1) 弹窗里点「好」关掉它（或点「取消」）"
+echo "       2) 打开：系统设置 → 隐私与安全性 → 安全性"
+echo "       3) 找到「lolo / Electron 已被拦截」的记录，点右侧「仍要打开」"
+echo "       4) 重新双击桌面上的「启动lolo」，这次就能正常打开"
+echo ""
+echo "     方式二（嫌麻烦、一劳永逸）：在终端执行下面这行，输开机密码后回车"
+echo "       sudo spctl --master-disable"
+echo "       然后系统设置 → 隐私与安全性 → 允许来源 选「任何来源」"
+echo "       （用完后想恢复安全设置：sudo spctl --master-enable）"
+echo ""
+echo "  以后打开：双击桌面「启动lolo」"
 echo "  退出软件：点托盘小图标退出，或按 Ctrl+C"
 echo "  更新版本：rm -rf ~/lolo/lolo-main 后重跑安装命令"
 echo "=========================================="
 echo ""
 
+LAUNCH_FAIL=0
 if [ -d "$RUN_APP" ]; then
   xattr -cr "$RUN_APP" 2>/dev/null || true
   cd "$SRC_DIR"
-  env -u ELECTRON_RUN_AS_NODE "$RUN_APP/Contents/MacOS/Electron" "$SRC_DIR" || npm start
+  env -u ELECTRON_RUN_AS_NODE "$RUN_APP/Contents/MacOS/Electron" "$SRC_DIR" 2>/dev/null || LAUNCH_FAIL=1
 elif [ -d "$MASTER_APP" ]; then
   cp -R "$MASTER_APP" "$RUN_APP"
   xattr -cr "$RUN_APP" 2>/dev/null || true
   cd "$SRC_DIR"
-  env -u ELECTRON_RUN_AS_NODE "$RUN_APP/Contents/MacOS/Electron" "$SRC_DIR" || npm start
+  env -u ELECTRON_RUN_AS_NODE "$RUN_APP/Contents/MacOS/Electron" "$SRC_DIR" 2>/dev/null || LAUNCH_FAIL=1
 else
   cd "$SRC_DIR"
   npm start
+fi
+
+if [ "$LAUNCH_FAIL" = "1" ]; then
+  echo ""
+  echo "⚠ 看起来启动被系统拦下了（很常见）。请按上面「方式一 / 方式二」放行后，"
+  echo "   再双击桌面上的「启动lolo」就能正常打开，不用重跑本安装命令。"
 fi
