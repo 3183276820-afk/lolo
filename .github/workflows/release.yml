@@ -54,9 +54,9 @@ jobs:
           看到 **Intel** 下 `-x64.dmg`，看到 **Apple M1/M2/M3/M4** 下 `-arm64.dmg`。
 
           **Mac 首次打开**（未签名应用）：不要双击，在 dmg 上**右键 → 打开**；
-          若提示“已损坏 / damaged”，在终端执行 `xattr -cr /Applications/lolo-desktop-pet.app` 后重开。
+          若提示“已损坏 / damaged”，在终端执行 `xattr -cr "/Applications/lolo桌宠.app"` 后重开。
           On macOS: right-click the dmg → **Open**. If it says "damaged", run
-          `xattr -cr /Applications/lolo-desktop-pet.app` in Terminal.
+          `xattr -cr "/Applications/lolo桌宠.app"` in Terminal.
 
           **首次使用请看** 👉 `lolo-使用说明-User-Guide.md`（中英双语完整手册，软件内「面板 → 使用说明」也有同样内容）。
 
