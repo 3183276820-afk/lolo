@@ -67,7 +67,7 @@ export ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
 # ---------- 4. 安装运行依赖 ----------
 # 只装 electron + electron-updater，用临时 package.json 避开
 # electron-builder / javascript-obfuscator / rcedit 这些打包期才用得着的大件
-if [ -d "$SRC_DIR/node_modules/electron" ]; then
+if [ -d "$SRC_DIR/node_modules/electron/dist/Electron.app" ]; then
   echo "✔ 运行依赖已安装，跳过"
 else
   echo "↓ 正在安装运行依赖（electron + electron-updater）"
