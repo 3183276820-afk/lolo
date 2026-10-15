@@ -72,6 +72,8 @@ if [ -d "$SRC_DIR/node_modules/electron/dist/Electron.app" ]; then
 else
   echo "↓ 正在安装运行依赖（electron + electron-updater）"
   echo "  这一步要下载 Electron 约 100-200MB，请耐心等待，不要关闭窗口..."
+  # 强制干净重装：npm 看到 electron 目录还在会跳过安装，即使里面的 app 已被系统删掉
+  rm -rf "$SRC_DIR/node_modules/electron"
   cp package.json package.json.lolo.bak
   cat > package.json <<'PKG'
 {
